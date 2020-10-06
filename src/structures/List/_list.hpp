@@ -1,6 +1,7 @@
 #ifndef LINKEDLIST_H
 #define LINKEDLIST_H
 #include "list_iterator.hpp"
+#include "../InterfaceIterator.hpp"
 
 template<typename T> class List{
 private:
@@ -8,8 +9,10 @@ private:
     //using InitializerLambda = [](const int index) -> T;
     using list_iter = ListIterator<T>;
     using c_list_iter = const ListIterator<T>;
-    using iterator = BaseIterator<T>*;
-    using const_iterator = const BaseIterator<T>*;
+    using iterator = Iterator<T>;
+    using base_iter = BaseIterator<T>*;
+    using const_iterator = const Iterator<T>;
+    using cbase_iter = const BaseIterator<T>*;
 
     using Node = Node<T>;
     using pointer = T*;
@@ -21,6 +24,10 @@ private:
     Node* _head;
     Node* _tail;
     int _size;
+
+    /*Node* _end_iterator_dummy() const{
+        return new Node(0, _tail, 0);
+    };*/
 
     Node* _get_node(const int index) const{
         if(index > _size - 1 || index < 0)
@@ -421,46 +428,39 @@ public:
     };
 
     iterator begin(){
-        iterator result = dynamic_cast<iterator>(new list_iter(_get_node(0)));
-        return result;
+        return iterator(dynamic_cast<base_iter>(new list_iter(_get_node(0))));
     };
     const_iterator begin() const{
         return cbegin();
     };
     const_iterator cbegin() const{
-        const_iterator result = dynamic_cast<const_iterator>(new c_list_iter(_get_node(0)));
-        return result;
+        return const_iterator(dynamic_cast<cbase_iter>(new c_list_iter(_get_node(0))));
     };
 
     iterator at(const int index){
-        iterator result = dynamic_cast<iterator>(new list_iter(_get_node(index)));
-        return result;
+        return iterator(dynamic_cast<base_iter>(new list_iter(_get_node(index))));
     };
     const_iterator at(const int index) const{
         return cat(index);
     };
     const_iterator cat(const int index) const{
-        const_iterator result = dynamic_cast<const_iterator>(new c_list_iter(_get_node(index)));
-        return result;
+        return const_iterator(dynamic_cast<cbase_iter>(new c_list_iter(_get_node(index))));
     };
 
     iterator end(){
         _get_node(_size - 1);
-        iterator result = dynamic_cast<iterator>(new list_iter(_tail->next));
-        return result;
+        return iterator(dynamic_cast<base_iter>(new list_iter(_tail->next)));
     };
     const_iterator end() const{
         return cend();
     };
     const_iterator cend() const{
         _get_node(_size - 1);
-        const_iterator result = dynamic_cast<const_iterator>(new c_list_iter(_tail->next));
-        return result;
+        return const_iterator(dynamic_cast<cbase_iter>(new c_list_iter(_tail->next)));
     };
 
     ~List(){
         clear();
-        //delete end_node;
     };
 };
 

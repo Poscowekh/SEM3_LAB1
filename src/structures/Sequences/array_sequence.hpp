@@ -4,26 +4,31 @@
 #include "../List/_list.hpp"
 #include "../Array/_array.hpp"
 
-template<typename T>
-class ArraySequence : public Sequence<T>{
+template<typename value>
+class ArraySequence : public Sequence<value>{
 private:
-    using Array = Array<T>;
-    using List = List<T>;
-    using Sequence = Sequence<T>;
-    using iterator = BaseIterator<T>*;
-    using const_iterator = const BaseIterator<T>*;
+    using Array = Array<value>;
+    using List = List<value>;
+    using Sequence = Sequence<value>;
+    using iterator = Iterator<value>;
+    using const_iterator = const Iterator<value>;
 
-    using value = T;
-    using reference = T&;
-    using const_reference = const T&;
-    using pointer = T*;
-    using const_pointer = const T*;
+    using reference = value&;
+    using const_reference = const value&;
+    using pointer = value*;
+    using const_pointer = const value*;
 
     Array* _array;
 
+    void _resize(const int new_size){
+        _array->resize(new_size);
+    };
+
 public:
     ArraySequence() : _array(new Array()) {};
-    ArraySequence(const T* data, const int count) : _array(new Array(data, count)) {};
+    ArraySequence(const int size) : _array(new Array(size)) {};
+    ArraySequence(const value* data, const int count) : _array(new Array(data, count)) {};
+    ArraySequence(std::initializer_list<value> list) : _array(new Array(list)) {};
 
     ArraySequence(const Array* array) : _array(new Array(array)) {};
     ArraySequence(const Array& array) : ArraySequence(&array) {};
@@ -31,8 +36,31 @@ public:
         array._data = 0;
     };
 
+    ArraySequence(const List* list) : ArraySequence(list->size) {
+        auto inputter = begin();
+        auto iter = list->begin(), last = list->end();
+        while(iter != last)
+            *(inputter++) = *(iter++);
+    };
+    ArraySequence(const List& list) : ArraySequence(&list) {};
+    ArraySequence(List&& list) : ArraySequence(list->size) {
+        for(int i = 0; i < list.size(); i++)
+            set(i, list.pop_front());
+        list.clear();
+    };
+
     ArraySequence(const ArraySequence& other) : _array(new Array(other._array)) {};
     ArraySequence(const ArraySequence* other) : _array(new Array(other->_array)) {};
+
+    ArraySequence(const Sequence* sequence) : ArraySequence(sequence->size()) {
+        iterator
+            iter = sequence->begin(),
+            last = sequence->end(),
+            input = begin();
+        while(iter != last)
+            *(input++) = *(iter++);
+    };
+    ArraySequence(const Sequence& sequence) : ArraySequence(&sequence) {};
 
     int size() const{
         return _array->size();
@@ -47,100 +75,212 @@ public:
         return false;
     };
 
-    T& front(){
+    reference front(){
         return _array->front();
     };
-    T front() const{
+    value front() const{
         return _array->front();
     };
-    T& get(const int index){
+
+    reference get(const int index){
         return _array->get(index);
     };
-    T get(const int index) const{
+    value get(const int index) const{
         return _array->get(index);
     };
-    T& back(){
+
+    reference back(){
         return _array->back();
     };
-    T back() const{
+    value back() const{
         return _array->back();
     };
 
-    void append(const T& data){
+    void set(const int index, const_reference val){
+        _array->set(index, val);
+    };
+    void set(const int index, const_pointer val){
+        _array->set(index, val);
+    };
+
+    void append(const_reference data){
         _array->push_back(&data);
     };
-    void Prepend(const T& data){
-        _array->PushFront(&data);
-    };
-    void InsertAt(const T& data, const int index){
-        _array->InsertAt(&data, index);
-    };
-    void RemoveAt(const int index){
-        _array->RemoveAt(index);
+    void append(const_pointer data){
+        _array->push_back(data);
     };
 
-    /*Array* DataPointer(){//why?
-        return _array;
-    };*/
+    void prepend(const_reference data){
+        _array->push_front(&data);
+    };
+    void prepend(const_pointer data){
+        _array->push_front(data);
+    };
 
-    Sequence* subsequence(const int from, const int to) const{
-        Sequence* result = new ArraySequence();
-        result->_array = _array->subarray(from, to);
-        result->length = from - to + 1;
-        return result;
+    void insert_at(const_reference data, const int index){
+        _array->insert(&data, index);
+    };
+    void remove_at(const int index){
+        _array->remove_index(index);
+    };
+
+    Sequence* sub_sequence(const int from, const int to) const{
+        ArraySequence* result = new ArraySequence();
+        *result->_array = _array->subarray(from, to);
+        return dynamic_cast<Sequence*>(result);
     };
 
     void concate(const Sequence* other){
-        auto iter = other->cbegin();
-        auto end = other->cend();
-        while(iter != end){
-
-        }
+        iterator iter = other->begin();
+        iterator last = other->end();
+        _resize(size() + other->size());
+        iterator input = at(size() - other->size());
+        while(iter != last)
+            *input++ = *iter++;
     };
     void concate(const Sequence& other){
-
-    };
-    ArraySequence& Concate(const ArraySequence& other){//wtf is going on
-        _array->CopyToArray(other->_array->FrontPointer(), 0, other->_array->GetLength());
-        return *this;
-    };
-    ArraySequence& GetCopy() const{
-        ArraySequence result(*this);
-        return result;
-    };
-    ArraySequence& CopyTo(ArraySequence& destination, const int from, const int to) const{
-        for(int i = from; i <= to; i++)
-            destination.Append((*this)[i]);
-        return destination;
+        concate(&other);
     };
 
-    T& operator[](const int index){
+    Sequence* get_concated(const Sequence* other) const{
+        ArraySequence* result = new ArraySequence(this);
+        result->concate(other);
+        return dynamic_cast<Sequence*>(result);
+    };
+    Sequence* get_concated(const Sequence& other) const{
+        return get_concated(&other);
+    };
+
+    Sequence* get_copy() const{
+        return dynamic_cast<Sequence*>(new ArraySequence(this));
+    };
+    void copy(const_pointer data, const int count){
+        _resize(size() + count);
+        iterator iter = at(size() - count);
+        for(int i = 0; i < count; i++)
+            *iter++ = *(data + i);
+    };
+
+    reference operator[](const int index){
         return get(index);
     };
-    ArraySequence& operator=(const ArraySequence& other){
-        if(*this != other)
-            *this = ArraySequence(other);
-        return *this;
+    value operator[](const int index) const{
+        return get(index);
     };
-    bool operator!=(const ArraySequence& other) const{
-        return (*_array) != *(other._array);
-    }
-    ArraySequence& operator+(const ArraySequence& other) const{
-        ArraySequence result(*this);
-        CopyTo(result, 0, _array->length - 1);
-        return result;
+
+    operator std::string() const{
+        return (std::string)(*_array);
     };
-    void operator+=(const ArraySequence& other){
-        *this = *this + other;
-    }
-    ArraySequence& operator+(const T& data) const{
-        ArraySequence result(*this);
-        result.Append(data);
-        return result;
-    }
-    void operator+=(const T& data){
-        *this = *this + data;
-    }
+
+    Sequence* operator=(const ArraySequence* other){
+        return (*this = dynamic_cast<Sequence*>(other));
+    };
+    Sequence& operator=(const ArraySequence& other){
+        return (*this = dynamic_cast<const Sequence&>(other));
+    };
+    Sequence* operator=(const Sequence* other){
+        if(other == 0){
+            other = dynamic_cast<Sequence*>(new ArraySequence());
+            return (*this = other);
+        };
+        if(this != other){
+            if(this != 0)
+                clear();
+            if(other->size() != 0){
+                _array = new Array(other->size());
+                iterator input = begin();
+                iterator iter = other->begin();
+                iterator last = other->end();
+                while(iter != last)
+                    *(input++) = *(iter++);
+            } else
+                _array = new Array();
+        };
+        return dynamic_cast<Sequence*>(this);
+    };
+    Sequence& operator=(const Sequence& other){
+        *this = &other;
+        return dynamic_cast<Sequence&>(*this);
+    };
+    Sequence* operator=(std::initializer_list<value> list){
+        *this = ArraySequence(list);
+        return dynamic_cast<Sequence*>(this);
+    };
+
+    bool operator==(const Sequence* other) const{
+        if(this == &other)
+            return true;
+        if(size() != other->size())
+            return false;
+        iterator iter1 = begin();
+        iterator iter2 = other->begin();
+        iterator last = end();
+        while(iter1 != last)
+            if(*(iter1++) != *(iter2++))
+                return false;
+        return true;
+    };
+    bool operator==(const Sequence& other) const{
+        return (*this == &other);
+    };
+    bool operator!=(const Sequence* other) const{
+        return !(*this == other);
+    };
+    bool operator!=(const Sequence& other) const{
+        return !(*this == &other);
+    };
+
+    Sequence* operator+(const Sequence* other) const{
+        return get_concated(other);
+    };
+    Sequence& operator+(const Sequence& other) const{
+        return get_concated(other);
+    };
+    Sequence* operator+(const_reference data) const{
+        ArraySequence* result = new ArraySequence(this);
+        result->append(data);
+        return dynamic_cast<Sequence*>(result);
+    };
+
+    void operator+=(const Sequence* other){
+        concate(other);
+    };
+    void operator+=(const Sequence& other){
+        concate(other);
+    };
+    void operator+=(const_reference data){
+        append(data);
+    };
+
+    iterator begin(){
+        return _array->begin();
+    };
+    const_iterator begin() const{
+        return cbegin();
+    };
+    const_iterator cbegin() const{
+        return _array->cbegin();
+    };
+
+    iterator at(const int index){
+        return _array->at(index);
+    };
+    const_iterator at(const int index) const{
+        return cat(index);
+    };
+    const_iterator cat(const int index) const{
+        return _array->cat(index);
+    };
+
+    iterator end(){
+        return _array->end();
+    };
+    const_iterator end() const{
+        return cend();
+    };
+    const_iterator cend() const{
+        return _array->cend();
+    };
 
     ~ArraySequence(){
         delete _array;

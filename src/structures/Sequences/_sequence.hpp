@@ -3,15 +3,17 @@
 #define SEQUENCE_HPP
 #include "../List/_list.hpp"
 #include "../Array/_array.hpp"
+#include "../InterfaceIterator.hpp"
 
-template<typename T> class Sequence{
+template<typename T>
+class Sequence{
     using reference = T&;
     using const_reference = const T&;
     using pointer = T*;
     using const_pointer = const T*;
     using value = T;
-    using iterator = BaseIterator<T>*;
-    using const_iterator = const BaseIterator<T>*;
+    using iterator = Iterator<T>;
+    using const_iterator = const Iterator<T>;
 
 public:
     virtual int size() const = 0;
@@ -68,7 +70,7 @@ public:
     };
 
     virtual Sequence& operator+(const Sequence& other){
-          return dynamic_cast<Sequence&>(*get_concated(other));
+        return dynamic_cast<Sequence&>(*get_concated(other));
     };
     virtual Sequence* operator+(const Sequence* other){
         return get_concated(other);
@@ -132,6 +134,7 @@ std::ostream& operator<<(std::ostream& out, const Sequence<T>* sequence){
             out << sequence->get(i) << ", ";
         out << sequence->back() << " ];";
     };
+    out << '\n';
     return out;
 };
 template<typename T>

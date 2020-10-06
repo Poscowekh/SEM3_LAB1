@@ -1,14 +1,17 @@
 #ifndef DYNAMICARRAY_H
 #define DYNAMICARRAY_H
 #include "array_iterator.hpp"
+#include "../InterfaceIterator.hpp"
 
 template<typename T> class Array{
 private:
     using InitializerFunction = T (*)(const int index);
     using arr_iter = ArrayIterator<T>;
     using c_arr_iter = const ArrayIterator<T>;
-    using iterator = BaseIterator<T>*;
-    using const_iterator = const BaseIterator<T>*;
+    using base_iter = BaseIterator<T>*;
+    using cbase_iter = const BaseIterator<T>*;
+    using iterator = Iterator<T>;
+    using const_iterator = const Iterator<T>;
 
     using pointer = T*;
     using const_pointer = const T*;
@@ -23,9 +26,9 @@ private:
     //int _buffer_size = 0;
     pointer _data;   //storage location
 
-    pointer _alloc(const int size) const{
-        return (pointer)malloc(_elsize * size);
-    };  //mem piece
+    inline pointer _alloc(const int size) const noexcept{
+        return pointer(malloc(_elsize * size));
+    };
 
     void _realloc_back(const int new_alloc){
         //alloc new memory size of new_alloc and realloc existing data
@@ -39,6 +42,8 @@ private:
         _allocated = new_alloc;
     };
     void _dealloc_back(const int dealloc = 1){
+        if(_allocated - dealloc < 0)
+            throw std::runtime_error("\nArray exception: deallocating non-existent memory");
         pointer tmp = _alloc(_allocated - dealloc);
         if(dealloc < _size){
             memcpy(tmp, _data + dealloc, _elsize * (_size - dealloc));
@@ -58,6 +63,8 @@ private:
         _allocated = new_alloc;
     };
     void _dealloc_front(const int dealloc = 1){
+        if(_allocated - dealloc < 0)
+            throw std::runtime_error("\nArray exception: deallocating non-existent memory");
         _size -= dealloc;
         pointer tmp = _alloc(_size + _get_buff_size());
         memcpy(tmp, _data + dealloc, _elsize * _size);
@@ -66,10 +73,10 @@ private:
         _data = tmp;
     };
 
-    int _get_buffer() const{
+    inline int _get_buffer() const noexcept{
         return _allocated - _size;
     };
-    int _get_buff_size() const{
+    int _get_buff_size() const noexcept{
         if(_elsize <= 4)
             return _elsize * 4;
         else if(_elsize <= 8)
@@ -78,11 +85,11 @@ private:
             return 8;
     };
 
-    void _dealloc_check(){
+    void _dealloc_check() noexcept{
         if(_get_buffer() >= 2 * _get_buff_size())
             _dealloc_back(_allocated - _size - _get_buff_size());
     };
-    void _realloc_check(){
+    void _realloc_check() noexcept{
         if(_get_buffer() == 0)
             _realloc_back(_size + _get_buff_size());
     };
@@ -96,10 +103,14 @@ private:
 public:
     Array() : _size(0), _allocated(0), _data(0), _elsize(sizeof(T)) {};
     Array(const int size) :
-        _elsize(sizeof(T)), _allocated(size + _get_buff_size()), _size(size), _data(pointer(malloc(_size + _get_buff_size()))) {};
+        _elsize(sizeof(T)), _allocated(size + _get_buff_size()), _size(size), _data(pointer(malloc(_size + _get_buff_size()))) {
+        if(size < 1)
+            throw std::logic_error("\nArray exception: allocation of negative-sized memory");
+    };
     Array(const int size, const_reference default_member) : Array(size) {
-        for(int i = 0; i < _size; i++)
-            set(i, &default_member);
+        iterator iter = begin(), last = end();
+        while(iter != last)
+            *iter++ = default_member;
     };
     Array(const int size, const_pointer default_member) : Array(size, *default_member) {};
     Array(const_pointer data, const int count) : Array(count) {
@@ -114,20 +125,20 @@ public:
     };
 
     Array(std::initializer_list<T> list) : Array(list.size()) {
-        auto iter = list.begin();
-        for(auto i = 0; i < _size; i++)
-            set(i, iter++);
+        auto iter = list.begin(), end = list.end();
+        iterator input = begin();
+        while(iter != end)
+            *input++ = *iter++;
     };
     Array(InitializerFunction func, const int size) : Array(size) {
-        for(int i = 0; i < _size; i++)
-            set(i, func(i));
+        auto iter = begin(), last = end();
+        while(iter != last)
+            *iter = func(*iter);
     };
-    Array(iterator from, iterator to) : Array() /*rework*/{
-        iterator copy = new iterator(from);
-        while(*copy != *to){
-            push_back(**copy);
-            (*copy)++;
-        };
+    Array(iterator from, iterator to) : Array(to - from) /*rework*/{
+        iterator copy = from, iter = begin();
+        while(copy != to)
+            *iter++ = *copy++;
     };
 
     int size() const{
@@ -146,6 +157,8 @@ public:
         return true;
     };
     void resize(const int size){
+        if(size < 0)
+            throw std::logic_error("\nArray exception: allocation of negative-sized memory");
         if(size >= _allocated){
             _realloc_back(size + _get_buff_size());
             _size = size;
@@ -239,16 +252,17 @@ public:
 
     void remove(const_pointer data){
         int index = find(data);
-        if(index >= 0)
-            remove(index);
+        if(index == -1)
+            throw std::runtime_error("\nArray exception: removing non-existent member");
+        remove_index(index);
     };
     void remove(const_reference data){
-        int index = find(&data);
-        if(index >= 0)
-            remove(index);
+        remove(&data);
     };
     void remove_index(const int index){
-        if(index == 0)
+        if(index < 0 || index >= _size)
+            throw std::runtime_error("\nArray exception: index out of range");
+        else if(index == 0)
             pop_front();
         else if(index == _size - 1)
             pop_back();
@@ -262,7 +276,9 @@ public:
         };
     };
     void insert(const_pointer data, const int index){
-        if(index == 0)
+        if(index < 0 || index > _size)
+            throw std::runtime_error("\nArray exception: index out of range");
+        else if(index == 0)
             push_front(data);
         else if(index == _size)
             push_back(data);
@@ -279,15 +295,7 @@ public:
     void insert(const_reference data, const int index){
         insert(&data, index);
     };
-    void sort(){
-        for(int i = 0; i < _size; i++)
-            for(int j = 0; j < _size - 1; j++)
-                if(get(j) < get(j + 1)){
-                    T tmp = get(j);
-                    set(j, get(j + 1));
-                    set(j + 1, tmp);
-                };
-    };
+
 
     void concate(const Array& other){
         concate(&other);
@@ -297,7 +305,7 @@ public:
     };
 
     Array get_concated(const Array* other){
-        Array result = Array(*this);
+        Array result = Array(this);
         result.concate(other);
         return result;
     };
@@ -306,6 +314,10 @@ public:
     };
 
     Array subarray(const int from, const int to){
+        if(from > to)
+            return subarray(to, from);
+        if(from < 0 || to < 0 || from > _size - 1 || to > _size - 1)
+            throw std::runtime_error("\nArray exception: index out of range");
         return Array(_data + from, to - from + 1);
     };
 
@@ -329,14 +341,16 @@ public:
         return *this;
     };
 
-    friend Array operator+(const_reference value, const Array& array){
+    friend Array operator+(const_reference val, const Array& array){
         Array result = Array();
-        result.push_back(&value);
+        result.push_back(&val);
         result.concate(&array);
         return result;
     };
 
     bool operator==(const Array& other) const{
+        if(this == &other)
+            return true;
         if(_size == 0 && other._size == 0)
             return true;
         if(_size != other._size)
@@ -425,33 +439,33 @@ public:
     };
 
     iterator begin(){
-        return dynamic_cast<iterator>(new arr_iter(_data));
+        return iterator(dynamic_cast<base_iter>(new arr_iter(_data)));
     };
     const_iterator begin() const{
         return cbegin();
     };
     const_iterator cbegin() const{
-        return dynamic_cast<const_iterator>(new c_arr_iter(_data));
+        return const_iterator(dynamic_cast<cbase_iter>(new c_arr_iter(_data)));
     };
 
     iterator at(const int index){
-        return dynamic_cast<iterator>(new arr_iter(_get_ptr(index)));
+        return iterator(dynamic_cast<base_iter>(new arr_iter(_get_ptr(index))));
     };
     const_iterator at(const int index) const{
         return cat(index);
     };
     const_iterator cat(const int index) const{
-        return dynamic_cast<const_iterator>(new c_arr_iter(_get_ptr(index)));
+        return const_iterator(dynamic_cast<cbase_iter>(new c_arr_iter(_get_ptr(index))));
     };
 
     iterator end(){
-        return dynamic_cast<iterator>(new arr_iter(_data + _size));
+        return iterator(dynamic_cast<base_iter>(new arr_iter(_data + _size)));
     };
     const_iterator end() const{
         return cend();
     };
     const_iterator cend() const{
-        return dynamic_cast<const_iterator>(new c_arr_iter(_data + _size));
+        return const_iterator(dynamic_cast<cbase_iter>(new c_arr_iter(_data + _size)));
     };
 
     int find_index(const_pointer data) const{

@@ -3,115 +3,57 @@
 #include <iterator>
 #include <iostream>
 
-template<typename Value, typename reference = Value&, typename pointer = Value*>
-class BaseIterator : std::iterator<std::random_access_iterator_tag, Value, std::size_t, pointer, reference>{
+template<typename value, typename reference = value&, typename pointer = value*>
+class BaseIterator{
 protected:
-    virtual reference data() = 0;
-    virtual reference data() const = 0;
+    using const_reference = const value&;
+    using const_pointer = const value*;
 
-    virtual pointer ptr() = 0;
-    virtual pointer ptr() const = 0;
+    virtual reference ref() = 0;
+    virtual const_reference cref() const = 0;
 
-    virtual Value val() = 0;
-    virtual Value val() const = 0;
+    virtual const_pointer cptr() const = 0;
+
+    virtual value val() const = 0;
 
     virtual bool _is_end() const = 0;
 
 public:
     virtual reference operator*() = 0;
-    virtual reference operator*() const = 0;
+    virtual const_reference operator*() const = 0;
 
-    virtual pointer operator->() = 0;
-    virtual const pointer operator->() const = 0;
+    virtual const_pointer operator->() const = 0;
 
-    virtual void operator++() = 0;
-    virtual void operator++(int) = 0;
+    virtual BaseIterator* operator++() = 0;
+    virtual BaseIterator* operator++(int) = 0;
 
-    virtual void operator--() = 0;
-    virtual void operator--(int) = 0;
+    virtual BaseIterator* operator--() = 0;
+    virtual BaseIterator* operator--(int) = 0;
 
     virtual BaseIterator& operator=(const BaseIterator& other){
         if(this != &other)
-            data() = other.val();
+            ref() = other.cref();
         return *this;
     };
     virtual BaseIterator* operator=(const BaseIterator* other){
         if(this != other)
-            data() = other->val();
+            ref() = other->cref();
         return this;
     };
 
-    virtual operator reference() const{
-        return reference(data());
-    };
-    virtual operator Value() const{
-        return Value(val());
-    };
-    virtual operator pointer() const{
-        return ptr();
-    };
-
-    virtual void operator+=(const reference value){
-        data() += value;
-    };
-    virtual void operator+=(const BaseIterator* other){
-        data() += other->data();
-    };
-    virtual void operator+=(const BaseIterator& other){
-        data() += other.data();
-    };
-
-    virtual void operator-=(const reference value){
-        data() -= value;
-    };
-    virtual void operator-=(const BaseIterator* other){
-        data() -= other->data();
-    };
-    virtual void operator-=(const BaseIterator& other){
-        data() -= other.data();
-    };
-
-    virtual Value operator+(const reference value) const{
-        Value result = Value(val());
-        result += value;
-        return result;
-    };
-    virtual Value operator+(const BaseIterator* other) const{
-        Value result = Value(val());
-        result += other->val();
-        return result;
-    };
-    virtual Value operator+(const BaseIterator& other) const{
-        Value result = Value(val());
-        result += other.val();
-        return result;
-    };
-
-    virtual Value operator-(const reference value) const{
-        Value result = Value(val());
-        result -= value;
-        return result;
-    };
-    virtual Value operator-(const BaseIterator* other) const{
-        Value result = Value(val());
-        result -= other->val();
-        return result;
-    };
-    virtual Value operator-(const BaseIterator& other) const{
-        Value result = Value(val());
-        result -= other.val();
-        return result;
-    };
+    virtual BaseIterator* copy() const = 0;
 
     virtual bool operator==(const BaseIterator* other) const{
+        if(typeid(*this) != typeid(*other))
+            throw std::runtime_error("\nIteratro exception: comparing iterators of different types");
         if(other->_is_end()){
-            if(_is_end() && (typeid(*this) == typeid(*other)))
+            if(_is_end())
                 return true;
             return false;
         };
         if(_is_end())
             return false;
-        if(ptr() == other->ptr())
+        if(cptr() == other->cptr())
             return true;
         /*if(val() == other->val())
             return true;*/
@@ -127,41 +69,35 @@ public:
     virtual bool operator!=(const BaseIterator& other) const{
         return !(*this == &other);
     };
+
+    virtual bool operator>(const BaseIterator& other) const{
+        if(*this - other > 0)
+            return true;
+        return false;
+    };
+    virtual bool operator>=(const BaseIterator& other) const{
+        if(*this - other >= 0)
+            return true;
+        return false;
+    };
+
+    virtual bool operator<(const BaseIterator& other) const{
+        if(*this - other <= 0)
+            return true;
+        return false;
+    };
+    virtual bool operator<=(const BaseIterator& other) const{
+        if(*this - other <= 0)
+            return true;
+        return false;
+    };
+
+    virtual int operator-(const BaseIterator& other) const{
+        if(typeid(*this) != typeid(other))
+            throw std::runtime_error("\nIterator exception: evaluating distance between iterators of different types");
+        return cptr() - other.cptr();
+    };
 };
 
-template<typename T>
-T operator+(const T& value, const BaseIterator<T>& iter){
-    T result = T(value);
-    result += *iter;
-    return result;
-};
-template<typename T>
-T operator+=(T& value, const BaseIterator<T>& iter){
-    value += *iter;
-    return value;
-};
-
-template<typename T>
-T operator-(const T& value, const BaseIterator<T>& iter){
-    T result = T(value);
-    result -= *iter;
-    return result;
-};
-template<typename T>
-T operator-=(T& value, const BaseIterator<T>& iter){
-    value -= *iter;
-    return value;
-};
-
-template<typename T>
-std::ostream& operator<<(std::ostream& out, const BaseIterator<T>& iter){
-    out << *iter;
-    return out;
-};
-template<typename T>
-std::ostream& operator<<(std::ostream& out, const BaseIterator<T>* iter){
-    out << **iter;
-    return out;
-};
 
 #endif // BASE_ITERATOR_HPP

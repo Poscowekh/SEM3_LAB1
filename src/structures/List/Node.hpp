@@ -3,9 +3,6 @@
 
 template<typename T>
 struct Node{
-    //friend class List;
-    //friend class ListIterator;
-
     T* data;
     Node* prev;
     Node* next;

@@ -8,8 +8,8 @@ private:
     using Sequence = Sequence<T>;
     using Array = Array<T>;
     using List = List<T>;
-    using iterator = BaseIterator<T>*;
-    using const_iterator = const BaseIterator<T>*;
+    using iterator = Iterator<T>;
+    using const_iterator = const Iterator<T>;
 
     using value = T;
     using reference = T&;
@@ -233,6 +233,12 @@ public:
         return out;
     };*/
 
+    Sequence* operator=(const ListSequence* other){
+        return (*this = dynamic_cast<const Sequence*>(other));
+    };
+    Sequence& operator=(const ListSequence& other){
+        return (*this = dynamic_cast<const Sequence&>(other));
+    };
     Sequence* operator=(const Sequence* other){
         if(this != other){
             clear();

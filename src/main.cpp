@@ -5,6 +5,7 @@
 using namespace std;
 
 using LS = ListSequence<int>;
+using AS = ArraySequence<int>;
 using L = List<int>;
 using A = Array<int>;
 using S = Sequence<int>;
@@ -50,37 +51,12 @@ int main()
     _sample test = _sample(size);
     cout << test;
 
-        //ARRAY CHECK
-    A a = A(test.data, test.size);
-    A aa = A(&a);
-    A sum = a + aa;
-
-    sum += 100;
-    sum = 100 + sum;
-    sum.resize(5);
-    cout << sum;
-    a = sum.subarray(2,4);
-    cout << a;
-
-    /*  //LIST CHECK
-    L list = L(data, size);
-    cout << list << endl;
-
-    auto iter = list.begin();
-    auto end = list.end();
-    while(*iter != *end){
-        cout << *iter << ' ';
-        (*iter)++;
-    };*/
-    /*  //SEQUENCE CHECK
-    S* seq1 = new LS(test.data, test.size);
+    S* seq1 = new AS(test.data, test.size);
     S* seq2 = new LS(seq1);
-    S* seq3 = new LS();
-    S* seq4 = new LS{ 1, 2, 3 };
-    S* seq5 = new LS(5, _sample_init_func);
-    S* seq6 = new LS();
-    cout << seq1 << endl << seq2 << endl << seq3 << endl << seq4 << endl << seq5;
-    cout << endl << *seq1 + (*seq4) << endl << seq5->sub_sequence(0,4);*/
+    cout << seq1 << seq2;
+    //cout << seq2->sub_sequence(1,2)->get_concated(seq1);
+    //cout << seq1->get_concated(seq2->sub_sequence(1,2));
+
 
     return 0;
 };

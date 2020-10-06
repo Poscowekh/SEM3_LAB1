@@ -3,34 +3,40 @@
 #include "../_libs.hpp"
 #include "Node.hpp"
 
-template<typename T>
-class ListIterator : public BaseIterator<T>{
+template<typename value>
+class ListIterator : public BaseIterator<value>{
 private:
     //friend class List;
-    using BaseIter = BaseIterator<T>;
-    using reference = T&;
-    using pointer = T*;
+    using base_iterator = BaseIterator<value>*;
+    using reference = value&;
+    using const_reference = const value&;
+    using pointer = value*;
+    using const_pointer = const value*;
+    using node = Node<value>*;
+    using const_node = const Node<value>*;
 
-    Node<T>* _node;
+    node _node;
 
-    T* ptr(){
+    const_pointer cptr() const{
+        if(_is_end())
+            throw std::runtime_error("\nList iterator exception: dereferencing end iterator");
         return _node->data;
     };
-    T* ptr() const{
-        return _node->data;
+
+    reference ref(){
+        if(_is_end())
+            throw std::runtime_error("\nList iterator exception: dereferencing end iterator");
+        return *_node->data;
+    };
+    const_reference cref() const{
+        if(_is_end())
+            throw std::runtime_error("\nList iterator exception: dereferencing end iterator");
+        return *_node->data;
     };
 
-    T& data(){
-        return *_node->data;
-    };
-    T& data() const{
-        return *_node->data;
-    };
-
-    T val(){
-        return *_node->data;
-    };
-    T val() const{
+    value val() const{
+        if(_is_end())
+            throw std::runtime_error("\nList iterator exception: dereferencing end iterator");
         return *_node->data;
     };
 
@@ -42,49 +48,79 @@ private:
 
 public:
     ListIterator() = delete;
-    ListIterator(Node<T>* node) : _node(node) {};
-    ListIterator(const Node<T>* node) : _node(node) {};
+    ListIterator(node other_node) : _node(other_node) {};
+    ListIterator(const_node other_node){
+        _node = other_node;
+    };
     ListIterator(const ListIterator* other) : _node(other->_node) {};
     ListIterator(const ListIterator& other) : _node(other._node) {};
 
-    void operator++(){
+    base_iterator operator++(){
+        if(_is_end())
+            throw std::runtime_error("\nList iterator exception: incrementing end iterator");
         _node = _node->next;
+        return dynamic_cast<base_iterator>(this);
     };
-    void operator++(int){
+    base_iterator operator++(int){
+        if(_is_end())
+            throw std::runtime_error("\nList iterator exception: incrementing end iterator");
+        base_iterator copy = dynamic_cast<base_iterator>(new ListIterator(this));
         _node = _node->next;
+        return copy;
     };
 
-    void operator--(){
+    base_iterator operator--(){
+        if(_is_end())
+            throw std::runtime_error("\nList iterator exception: decrementing to null-pointing iterator");
         _node = _node->prev;
+        return dynamic_cast<base_iterator>(this);
     };
-    void operator--(int){
+    base_iterator operator--(int){
+        if(_is_end())
+            throw std::runtime_error("\nList iterator exception: decrementing to null-pointing iterator");
+        base_iterator copy = dynamic_cast<base_iterator>(new ListIterator(this));
         _node = _node->prev;
+        return copy;
+    };
+
+    base_iterator copy() const{
+        return dynamic_cast<base_iterator>(new ListIterator(this));
     };
 
     reference operator*(){
-        return *_node->data;
+        return ref();
     };
-    reference operator*() const{
-        return *_node->data;
-    };
-
-    pointer operator->(){
-        return _node->data;
-    };
-    const pointer operator->() const{
-        return _node->data;
+    const_reference operator*() const{
+        return cref();
     };
 
-    /*bool operator==(const ListIterator* other) const{
-        if(_node == other->_node)
-            return true;
-        return false;
+    const_pointer operator->() const{
+        return cptr();
     };
-    bool operator==(const ListIterator& other) const{
-        if(_node == other._node)
-            return true;
-        return false;
-    };*/
+
+    int operator-(const BaseIterator<value>& other) const override{
+        if(typeid(*this) != typeid(other))
+            throw std::runtime_error("\nIterator exception: evaluating distance between iterators of different types");
+        if(_is_end())
+            throw std::runtime_error("\nIterator exception: evaluating distance from end iterator");
+        ListIterator iter1 = *dynamic_cast<ListIterator*>(other.copy()),
+                iter2 = *dynamic_cast<ListIterator*>(other.copy());
+        if(iter1._is_end())
+            return 0;
+        int distance = 0;
+        while(!iter1._is_end() || iter1 != *this){
+            iter1++;
+            distance++;
+        };
+        if(iter1 != *this){
+            distance = 0;
+            while(!iter2._is_end() || iter2 != *this){
+                iter2--;
+                distance++;
+            };
+        };
+        return distance;
+    };
 
     ~ListIterator(){
         _node = 0;
