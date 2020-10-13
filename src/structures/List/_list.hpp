@@ -89,6 +89,11 @@ public:
         for(auto i = 0; i < list.size(); i++)
             push_back(iter++);
     };
+    List(iterator from, iterator to) : List() {
+        auto iter = from;
+        while(iter != to)
+            push_back(*iter++);
+    };
 
     void push_front(const_pointer data, const int count = 1){
         for(int i = 0; i < count; i++){
@@ -254,7 +259,7 @@ public:
     };
     List get_concated(const List* other){
         List result = List(*this);
-        result->concate(other);
+        result.concate(other);
         return result;
     };
     List get_concated(const List& other){

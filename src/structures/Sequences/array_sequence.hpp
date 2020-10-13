@@ -61,6 +61,7 @@ public:
             *(input++) = *(iter++);
     };
     ArraySequence(const Sequence& sequence) : ArraySequence(&sequence) {};
+    ArraySequence(iterator from, iterator to) : _array(new Array(from, to)) {};
 
     int size() const{
         return _array->size();
@@ -199,7 +200,7 @@ public:
         return dynamic_cast<Sequence*>(this);
     };
     Sequence& operator=(const Sequence& other){
-        *this = &other;
+        operator=(&other);
         return dynamic_cast<Sequence&>(*this);
     };
     Sequence* operator=(std::initializer_list<value> list){

@@ -64,6 +64,7 @@ public:
         _list = new List(size, default_value);
     };
     ListSequence(const int size, const_pointer default_value) : ListSequence(size, *default_value) {};
+    ListSequence(iterator from, iterator to) : _list(new List(from, to)) {};
 
     int size() const{
         return _list->size();
@@ -241,18 +242,17 @@ public:
     };
     Sequence* operator=(const Sequence* other){
         if(this != other){
-            clear();
-            for(int i = 0; i < other->size(); i++)
-                append(other->get(i));
+            if(this != 0)
+                clear();
+            auto from = other->begin();
+            auto to = other->end();
+            while(from != to)
+                append(*from++);
         };
         return dynamic_cast<Sequence*>(this);
     };
     Sequence& operator=(const Sequence& other){
-        if(this != &other){
-            clear();
-            for(int i = 0; i < other.size(); i++)
-                append(other.get(i));
-        };
+        operator=(&other);
         return dynamic_cast<Sequence&>(*this);
     };
     Sequence* operator=(std::initializer_list<T> list){

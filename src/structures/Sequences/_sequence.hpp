@@ -145,6 +145,8 @@ std::ostream& operator<<(std::ostream& out, const Sequence<T>& sequence){
 template<typename T>
 std::istream& operator>>(std::istream& in, Sequence<T>* sequence){
     // WARNING! IN C++ THERE IS NO WAY TO CHECK INITIALIZATION!!!
+    // if sequence pointer is uninitialized it may break!
+    //Dut to it being a base class it cannot be constructed and so cannot be initilized
     /*if(!(sequence != 0) && !(sequence == 0))
         throw std::runtime_error("Sequence exception: sequence uninitialized");*/
     int count = 0;
