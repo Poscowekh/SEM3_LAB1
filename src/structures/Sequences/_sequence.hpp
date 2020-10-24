@@ -5,7 +5,7 @@
 #include "../Array/_array.hpp"
 #include "../InterfaceIterator.hpp"
 
-template<typename T>
+template<typename T = int>
 class Sequence{
     using reference = T&;
     using const_reference = const T&;
@@ -31,12 +31,12 @@ public:
 
     virtual void append(const_reference data) = 0;    //to tail
     virtual void append(const_pointer data, const int count = 1){
-        for(int i = 0; i < count; i++)
+        for(int i = 0; i < count; ++i)
             append(*(data + i));
     };
     virtual void prepend(const_reference data) = 0;   //to first
     virtual void prepend(const_pointer data, const int count = 1){
-        for(int i = 0; i < count; i++)
+        for(int i = 0; i < count; ++i)
             prepend(*(data + i));
     };
 
@@ -55,8 +55,23 @@ public:
     virtual Sequence* get_concated(const Sequence& other) const = 0;
 
     virtual Sequence* get_copy() const = 0;
+    virtual Sequence* get_clean_copy(const int size = 0) const = 0;
 
     virtual void copy(const_pointer data, const int count) = 0;
+    virtual void copy_range(iterator from_iterator, iterator to_iterator, iterator start_iterator){
+        auto iter = from_iterator, input = start_iterator;
+        while(iter != to_iterator) {
+            *input = *iter;
+            ++iter;
+            ++input;
+        };
+    };
+    virtual void copy_range(iterator from_iterator, const int count, const int from_index = 0){
+        copy_range(from_iterator, from_iterator + count, at(from_index));
+    };
+    virtual void copy_range(iterator from_iterator, iterator to_iterator, const int from_index = 0){
+        copy_range(from_iterator, to_iterator, at(from_index));
+    };
 
     virtual reference operator[](const int index) = 0;
     virtual value operator[](const int index) const = 0;
@@ -64,8 +79,9 @@ public:
     virtual operator std::string() const = 0;
     virtual operator pointer() const{
         pointer result = pointer(malloc(sizeof(T) * size()));
-        for(int i = 0; i < size(); i++)
-            *(result + i) = get(i);
+        auto iter = begin();
+        for(int i = 0; i < size(); ++i, ++iter)
+            *(result + i) = *iter;
         return result;
     };
 
@@ -78,7 +94,7 @@ public:
 
     virtual Sequence& operator=(const Sequence& other) = 0;
     virtual Sequence* operator=(const Sequence* other) = 0;
-    virtual Sequence* operator=(std::initializer_list<T> list) = 0;
+    virtual Sequence* operator=(const std::initializer_list<T>& list) = 0;
 
     virtual ~Sequence(){};
 
@@ -95,7 +111,7 @@ public:
     virtual const_iterator cat(const int index) const = 0;
 };
 
-/* IMPOSSIBLE
+/*
 template<typename T>
 Sequence<T>* operator+(const T& value, const Sequence<T>* sequence){
     Sequence<T>* result;
@@ -125,12 +141,19 @@ Sequence<T>& operator+=(const T& value, Sequence<T>& sequence){
 
 template<typename T>
 std::ostream& operator<<(std::ostream& out, const Sequence<T>* sequence){
+    if(sequence == 0) {
+        out << "Uninitialised Sequence\n";
+        return out;
+    } else if(sequence->size() == 0) {
+        out << "Empty Sequence [ ]\n";
+        return out;
+    };
     out << "Sequence (size = " << sequence->size() << "):";
     if(sequence->size() == 0)
         out << " [ ];";
     else {
         out << "\n[ ";
-        for(auto i = 0; i < sequence->size() - 1; i++)
+        for(auto i = 0; i < sequence->size() - 1; ++i)
             out << sequence->get(i) << ", ";
         out << sequence->back() << " ];";
     };
@@ -153,7 +176,7 @@ std::istream& operator>>(std::istream& in, Sequence<T>* sequence){
     sequence->clear();
     in >> count;
     T tmp = T();
-    for(int i = 0; i < count; i++){
+    for(int i = 0; i < count; ++i){
         in >> tmp;
         sequence->append(tmp);
     };

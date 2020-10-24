@@ -27,24 +27,27 @@ private:
 public:
     ArraySequence() : _array(new Array()) {};
     ArraySequence(const int size) : _array(new Array(size)) {};
-    ArraySequence(const value* data, const int count) : _array(new Array(data, count)) {};
-    ArraySequence(std::initializer_list<value> list) : _array(new Array(list)) {};
+    ArraySequence(const_pointer data, const int count) : _array(new Array(data, count)) {};
+    ArraySequence(const std::initializer_list<value>& list) : _array(new Array(list)) {};
+    ArraySequence(const int size, const_reference default_member) : _array(new Array(size, default_member)) {};
+    ArraySequence(const int size, const_pointer default_member) : ArraySequence(size, *default_member) {};
 
     ArraySequence(const Array* array) : _array(new Array(array)) {};
     ArraySequence(const Array& array) : ArraySequence(&array) {};
-    ArraySequence(Array&& array) : ArraySequence(&array) {
-        array._data = 0;
-    };
+    ArraySequence(Array&& array) : _array(new Array(std::move(array))) {};
 
     ArraySequence(const List* list) : ArraySequence(list->size) {
-        auto inputter = begin();
+        auto input = begin();
         auto iter = list->begin(), last = list->end();
-        while(iter != last)
-            *(inputter++) = *(iter++);
+        while(iter != last){
+            *input = *iter;
+            ++input;
+            ++iter;
+        };
     };
     ArraySequence(const List& list) : ArraySequence(&list) {};
     ArraySequence(List&& list) : ArraySequence(list->size) {
-        for(int i = 0; i < list.size(); i++)
+        for(int i = 0; i < list.size(); ++i)
             set(i, list.pop_front());
         list.clear();
     };
@@ -52,14 +55,7 @@ public:
     ArraySequence(const ArraySequence& other) : _array(new Array(other._array)) {};
     ArraySequence(const ArraySequence* other) : _array(new Array(other->_array)) {};
 
-    ArraySequence(const Sequence* sequence) : ArraySequence(sequence->size()) {
-        iterator
-            iter = sequence->begin(),
-            last = sequence->end(),
-            input = begin();
-        while(iter != last)
-            *(input++) = *(iter++);
-    };
+    ArraySequence(const Sequence* sequence) : ArraySequence(sequence->begin(), sequence->end()) {};
     ArraySequence(const Sequence& sequence) : ArraySequence(&sequence) {};
     ArraySequence(iterator from, iterator to) : _array(new Array(from, to)) {};
 
@@ -71,9 +67,7 @@ public:
             _array->clear();
     };
     bool empty() const{
-        if(_array->size() > 0)
-            return true;
-        return false;
+        return _array->empty();
     };
 
     reference front(){
@@ -122,7 +116,7 @@ public:
         _array->insert(&data, index);
     };
     void remove_at(const int index){
-        _array->remove_index(index);
+        _array->remove(index);
     };
 
     Sequence* sub_sequence(const int from, const int to) const{
@@ -136,8 +130,11 @@ public:
         iterator last = other->end();
         _resize(size() + other->size());
         iterator input = at(size() - other->size());
-        while(iter != last)
-            *input++ = *iter++;
+        while(iter != last){
+            *input = *iter;
+            ++input;
+            ++iter;
+        };
     };
     void concate(const Sequence& other){
         concate(&other);
@@ -155,11 +152,18 @@ public:
     Sequence* get_copy() const{
         return dynamic_cast<Sequence*>(new ArraySequence(this));
     };
+    Sequence* get_clean_copy(const int size = 0) const{
+        if(size > 0)
+            return dynamic_cast<Sequence*>(new ArraySequence(size));
+        else
+            return dynamic_cast<Sequence*>(new ArraySequence());
+    };
+
     void copy(const_pointer data, const int count){
         _resize(size() + count);
         iterator iter = at(size() - count);
-        for(int i = 0; i < count; i++)
-            *iter++ = *(data + i);
+        for(int i = 0; i < count; ++i, ++iter)
+            *iter = *(data + i);
     };
 
     reference operator[](const int index){
@@ -192,8 +196,11 @@ public:
                 iterator input = begin();
                 iterator iter = other->begin();
                 iterator last = other->end();
-                while(iter != last)
-                    *(input++) = *(iter++);
+                while(iter != last){
+                    *input = *iter;
+                    ++input;
+                    ++iter;
+                };
             } else
                 _array = new Array();
         };
@@ -203,7 +210,7 @@ public:
         operator=(&other);
         return dynamic_cast<Sequence&>(*this);
     };
-    Sequence* operator=(std::initializer_list<value> list){
+    Sequence* operator=(const std::initializer_list<value>& list){
         *this = ArraySequence(list);
         return dynamic_cast<Sequence*>(this);
     };
@@ -216,9 +223,12 @@ public:
         iterator iter1 = begin();
         iterator iter2 = other->begin();
         iterator last = end();
-        while(iter1 != last)
-            if(*(iter1++) != *(iter2++))
+        while(iter1 != last){
+            if(*iter1 != *iter2)
                 return false;
+            ++iter1;
+            ++iter2;
+        };
         return true;
     };
     bool operator==(const Sequence& other) const{
@@ -284,6 +294,7 @@ public:
     };
 
     ~ArraySequence(){
+        //this->~Sequence();
         delete _array;
     };
 };

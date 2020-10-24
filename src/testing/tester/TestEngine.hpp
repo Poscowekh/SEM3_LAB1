@@ -2,62 +2,86 @@
 #define TESTENGINE_HPP
 #include "Test.hpp"
 
-namespace Test {
+namespace Testing {
     class Tester {
     private:
-        int errors;
-        int count;
-        Test* tests;
+        int count = 0;
+        Test* tests = 0;
 
         Tester(const Tester&) = delete;
+        Tester& operator=(Tester) = delete;
 
         void _realloc(const int times = 1){
             Test* tmp = (Test*)malloc((count + times) * sizeof(Test));
             memcpy(tmp, tests, count * sizeof(Test));
             free(tests);
             tests = tmp;
+            tmp = 0;
+        };
+        const Test& _get(const int index) const{
+            return (*this)[index];
         };
 
     public:
-        Tester() : errors(0), count(0), tests(0) {};
-        Tester(Tester&& other) : errors(0), count(other.count), tests(other.tests) {
+        Tester() : count(0), tests(0) {};
+        Tester(Tester&& other) : count(other.count), tests(other.tests) {
             other.tests = 0;
         };
 
         void add_test(const Test* new_test){
             _realloc();
             memcpy(tests + count, new_test, sizeof(Test));
-            count++;
+            ++count;
         };
         void add_test(const Test& new_test){
             add_test(&new_test);
         };
 
-        void run_tests(){
+        int run_all_tests() const{
             using std::endl;
             using std::cout;
+            int errors = 0;
 
             cout << "RUNNING ALL TESTS" << endl;
-            for(int i = 0; i < count; i++){
+            for(int i = 0; i < count; ++i){
                 cout << "TEST " << i + 1 << ":" << endl;
-                errors += (tests + i)->run_tests();
+                errors += _get(i).run_tests();
             };
             cout << "TESTS FINISHED:  ";
             if(errors > 0)
                 cout << errors << " errors found." << endl;
             else
-                cout << "no errors found." << endl;
-            errors = 0;
+                cout << "SUCCESS." << endl;
+
+            return errors;
         };
 
+        Tester& operator=(Tester&& other){
+            //if(this != 0)
+            free(tests);
+            count = other.count;
+            tests = other.tests;
+            other.tests = 0;
+            return *this;
+        };/*
         Tester& operator=(const Tester& other){
             if(this != 0)
                 free(tests);
-            count = errors = 0;
+            count = 0;
             _realloc(other.count);
             count = other.count;
-            memcpy(tests, other.tests, sizeof(Test) * count);
+            memcpy(tests, other.tests, count * sizeof(Test));
             return *this;
+        };*/
+
+        const Test& operator[](const int index) const{
+            if(index < 0 || index >= count)
+                throw std::runtime_error("Test out of range");
+            return *(tests + index);
+        };
+
+        int operator()() const{
+            return run_all_tests();
         };
 
         ~Tester(){

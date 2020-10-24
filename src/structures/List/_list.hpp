@@ -38,13 +38,13 @@ private:
     };
     Node* _from__head(const int index) const{
         Node* tmp = _head;
-        for(int i = 0; i < index; i++)
+        for(int i = 0; i < index; ++i)
             tmp = tmp->next;
         return tmp;
     };
     Node* _from__tail(int index) const{
         Node* tmp = _tail;
-        for(int i = _size; i > index + 1; i--)
+        for(int i = _size; i > index + 1; --i)
             tmp = tmp->prev;
         return tmp;
     };
@@ -72,56 +72,55 @@ public:
 
     List(const_pointer data, const int count, const int from = 0) : List() {
         if(data != 0)
-            for(int i = from; i < count + from; i++)
+            for(int i = from; i < count + from; ++i)
                 push_back(data + i);
     };
     List(const int size, const_reference default_member = T()) : List() {
-        for(int i = 0; i < size; i++)
+        for(int i = 0; i < size; ++i)
             push_back(&default_member);
     };
     List(const int size, const_pointer default_member) : List(size, *default_member) {};
     List(const int size, InitializerFunction func) : List() {
-        for(int i = 0; i < size; i++)
+        for(int i = 0; i < size; ++i)
             push_back(func(i));
     };
-    List(std::initializer_list<T> list) : List() {
+    List(const std::initializer_list<T>& list) : List() {
         auto iter = list.begin();
-        for(auto i = 0; i < list.size(); i++)
-            push_back(iter++);
+        int tmp = list.size();
+        for(auto i = 0; i < tmp; ++i, ++iter)
+            push_back(*iter);
     };
     List(iterator from, iterator to) : List() {
         auto iter = from;
-        while(iter != to)
-            push_back(*iter++);
+        while(iter != to){
+            push_back(*iter);
+            ++iter;
+        };
     };
 
     void push_front(const_pointer data, const int count = 1){
-        for(int i = 0; i < count; i++){
+        for(int i = 0; i < count; ++i){
             Node* tmp = new Node(data + i, 0, _head);
             if(_size == 0)
                 _tail = tmp;
             else
                 _head->prev = tmp;
             _head = tmp;
-            _size++;
+            ++_size;
         };
     };
     void push_front(const_reference data){
         push_front(&data);
     };
     void push_back(const_pointer data, const int count = 1){
-        for(int i = 0; i < count; i++){
+        for(int i = 0; i < count; ++i){
             Node* tmp = new Node(data + i, _tail, 0);
-            /*
-             * tmp->data = data;
-            tmp->prev = _tail;
-            tmp->next = 0;*/
             if(_size == 0)
                 _head = tmp;
             else
                 _tail->next = tmp;
             _tail = tmp;
-            _size++;
+            ++_size;
         };
     };
     void push_back(const_reference data){
@@ -155,7 +154,7 @@ public:
     };
 
     void expand(const int count){
-        for(int i = 0; i < count; i++)
+        for(int i = 0; i < count; ++i)
             push_back(T());
     };
 
@@ -180,7 +179,7 @@ public:
 
     value pop_back(const int count = 1){
         value result;
-        for(int i = 0; i < count; i++){
+        for(int i = 0; i < count; ++i){
             if(i == count - 1)
                 result = T(back());
             if(_size > 1){
@@ -191,13 +190,13 @@ public:
                 free(_tail);
                 _head = _tail = 0;
             };
-            _size--;
+            --_size;
         };
         return result;
     };
     value pop_front(const int count = 1){
         value result;
-        for(int i = 0; i < count; i++){
+        for(int i = 0; i < count; ++i){
             if(i == count - 1)
                 result = T(back());
             if(_size > 1){
@@ -208,7 +207,7 @@ public:
                 free(_head);
                 _head = _tail = 0;
             };
-            _size--;
+            --_size;
         };
         return result;
     };
@@ -223,7 +222,7 @@ public:
             new_node->prev = new_node->next->prev;
             new_node->next->prev->next = new_node;
             new_node->next->prev = new_node;
-            _size++;
+            ++_size;
         };
     };
     void insert(const_reference data, const int index){
@@ -239,20 +238,29 @@ public:
             tmp->next->prev = tmp->prev;
             tmp->prev->next = tmp->next;
             delete tmp;
-            _size--;
+            --_size;
         };
     };
 
     List sublist(const int from, const int to) const{
         List result = List();
-        for(int i = from; i <= to; i++)
-            result.push_back(get(i));
+        auto iter = at(from),
+             last = at(to);
+        ++last;
+        while(iter != last){
+            result.push_back(*iter);
+            ++iter;
+        };
         return result;
     };
 
     void concate(const List* other){
-        for(int i = 0; i < other->_size; i++)
-            push_back(other->get(i));
+        auto iter = other->begin(),
+             last = other->end();
+        while(iter != last) {
+            push_back(*iter);
+            ++iter;
+        };
     };
     void concate(const List& other){
         concate(&other);
@@ -315,7 +323,7 @@ public:
     };
     List operator++(const int count){
         List result = List(this);
-        for(int i = 0; i < count; i++)
+        for(int i = 0; i < count; ++i)
             push_back(T());
         return result;
     };
@@ -327,7 +335,7 @@ public:
             return false;
         Node* tmp1 = _head;
         Node* tmp2 = list._head;
-        for(int i = 0; i < _size; i++){
+        for(int i = 0; i < _size; ++i){
             if(*(tmp1->data) != *(tmp2->data))
                 return false;
             tmp1 = tmp1->next;
@@ -357,8 +365,17 @@ public:
             };
         };
         return *this;
-    };
-    List& operator=(std::initializer_list<T> list){
+    };/*
+    List& operator=(List&& other){
+        if(&other != 0) {
+            *_head = *other._head;
+            *_tail = *other._tail;
+            _size = other._size;
+        };
+        other._head = other._tail = 0;
+        return *this;
+    };*/
+    List& operator=(const std::initializer_list<T>& list){
         *this = List(list);
         return *this;
     };
@@ -370,7 +387,7 @@ public:
         if(_size == 0)
             return result + ']';
         else {
-            for(int i = 0; i < _size - 1; i++){
+            for(int i = 0; i < _size - 1; ++i){
                 std::string tmp;
                 if(show_indexes)
                     tmp += std::to_string(i) + ':';
@@ -420,7 +437,7 @@ public:
         auto tmp = _head;
         int index = 0;
         while(tmp != 0){
-            index++;
+            ++index;
             if(tmp->_data == data)
                 return index;
         };

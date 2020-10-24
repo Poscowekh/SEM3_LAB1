@@ -20,11 +20,11 @@ private:
     using value = T;
     //using const_value = const T;
 
-    int _size;
-    int _elsize;
-    int _allocated;
+    int _size = 0;
+    int _elsize = 0;
+    int _allocated = 0;
     //int _buffer_size = 0;
-    pointer _data;   //storage location
+    pointer _data = 0;   //storage location
 
     inline pointer _alloc(const int size) const noexcept{
         return pointer(malloc(_elsize * size));
@@ -78,11 +78,11 @@ private:
     };
     int _get_buff_size() const noexcept{
         if(_elsize <= 4)
-            return _elsize * 4;
+            return 10;
         else if(_elsize <= 8)
-            return _elsize;
+            return _elsize * 2;
         else
-            return 8;
+            return 10;
     };
 
     void _dealloc_check() noexcept{
@@ -103,9 +103,10 @@ private:
 public:
     Array() : _size(0), _allocated(0), _data(0), _elsize(sizeof(T)) {};
     Array(const int size) :
-        _elsize(sizeof(T)), _allocated(size + _get_buff_size()), _size(size), _data(pointer(malloc(_size + _get_buff_size()))) {
+        _elsize(sizeof(T)), _allocated(size + _get_buff_size()), _size(size) {
         if(size < 1)
             throw std::logic_error("\nArray exception: allocation of negative-sized memory");
+        _data = pointer(malloc((_size + _get_buff_size()) * _elsize));
     };
     Array(const int size, const_reference default_member) : Array(size) {
         iterator iter = begin(), last = end();
@@ -124,21 +125,32 @@ public:
         other._data = 0;
     };
 
-    Array(std::initializer_list<T> list) : Array(list.size()) {
+    Array(const std::initializer_list<T>& list) : Array(list.size()) {
         auto iter = list.begin(), end = list.end();
-        iterator input = begin();
-        while(iter != end)
-            *input++ = *iter++;
+        auto input = begin();
+        while(iter != end){
+            *input = *iter;
+            ++input;
+            ++iter;
+        };
     };
     Array(InitializerFunction func, const int size) : Array(size) {
-        auto iter = begin(), last = end();
-        while(iter != last)
-            *iter = func(*iter);
+        auto iter = begin(),
+             last = end();
+        int i = 0;
+        while(iter != last){
+            *iter = func(i);
+            ++i;
+            ++iter;
+        };
     };
-    Array(iterator from, iterator to) : Array(to - from) /*rework*/{
-        iterator copy = from, iter = begin();
-        while(copy != to)
-            *iter++ = *copy++;
+    Array(iterator from, iterator to) : Array(from - to) {
+        auto copy = from, iter = begin();
+        while(copy != to){
+            *iter = *copy;
+            ++iter;
+            ++copy;
+        };
     };
 
     int size() const{
@@ -228,14 +240,13 @@ public:
     };
 
     void push_back(const_pointer data, const int count){
-        //rework is better
-        for(int i = 0; i < count; i++)
+        for(int i = 0; i < count; ++i)
             push_back(data + i);
     };
     void push_back(const_pointer data){
         _realloc_check();
         memcpy(_data + _size, data, _elsize);
-        _size++;
+        ++_size;
     };
     void push_back(const_reference data){
         push_back(&data);
@@ -250,7 +261,7 @@ public:
         push_front(&data);
     };
 
-    void remove(const_pointer data){
+    /*void remove(const_pointer data){
         int index = find(data);
         if(index == -1)
             throw std::runtime_error("\nArray exception: removing non-existent member");
@@ -258,8 +269,8 @@ public:
     };
     void remove(const_reference data){
         remove(&data);
-    };
-    void remove_index(const int index){
+    };*/
+    void remove(const int index){
         if(index < 0 || index >= _size)
             throw std::runtime_error("\nArray exception: index out of range");
         else if(index == 0)
@@ -357,7 +368,7 @@ public:
             return false;
         pointer tmp1 = _data;
         pointer tmp2 = other._data;
-        for(int i = 0; i < _size; i++){
+        for(int i = 0; i < _size; ++i){
             tmp1 = tmp1 + i;
             tmp2 = tmp2 + i;
             if(*tmp1 != *tmp2)
@@ -396,7 +407,7 @@ public:
         *this = *other;
         return this;
     };
-    Array& operator=(std::initializer_list<T> list){
+    Array& operator=(const std::initializer_list<T>& list){
         *this = Array(list);
         return *this;
     };
@@ -413,7 +424,7 @@ public:
         if(_size == 0)
             return result + ']';
         else {
-            for(int i = 0; i < _size - 1; i++){
+            for(int i = 0; i < _size - 1; ++i){
                 std::string tmp;
                 if(show_indexes)
                     tmp += std::to_string(i) + ':';
@@ -472,7 +483,7 @@ public:
         pointer tmp = _data;
         int index = 0;
         while(tmp != 0){
-            index++;
+            ++index;
             if(*tmp == *data){
                 tmp = 0;
                 return index;

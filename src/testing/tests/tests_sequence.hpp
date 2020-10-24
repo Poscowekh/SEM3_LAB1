@@ -3,8 +3,9 @@
 #include "../tester/_assert_functions.hpp"
 #include "../../Structures.hpp"
 
-namespace Test {
+namespace Testing {
     std::string test_sequence_create(){
+        std::string result = std::string();
         using Seq = Sequence<int>*;
         using LSeq = ListSequence<int>;
         using ASeq = ArraySequence<int>;
@@ -14,69 +15,113 @@ namespace Test {
         Seq test1a = new LSeq();
         Seq test1b = new ASeq();
         if(!test1a->empty())
-            return std::string("empty construction");
+            _add_str(result, std::string("empty construction (ListSequence)"));
         if(!test1b->empty())
-            return std::string("empty construction");
+            _add_str(result, std::string("empty construction (ArraySequence)"));
 
         test1a = new LSeq(test_data.data, test_data.size);
-        test1b = new LSeq(test_data.data, test_data.size);
-        Seq test2a = new LSeq(test1a);
-        Seq test2b = new ASeq(test1b);
-        if(!_assert_equal(test1a, test1b) || !_assert_equal(test1a, test_data) ||_assert_equal(test2a, test1a) ||
-                !_assert_equal(test1a, test2b))
-            return std::string("copy construction");
+        if(!_assert_equal(test1a, test_data))
+            _add_str(result, std::string("pointer construction (ListSequence)"));
+        test1b = new ASeq(test_data.data, test_data.size);
+        if(!_assert_equal(test1a, test1b) || !_assert_equal(test1b, test_data))
+            _add_str(result, std::string("pointer construction (ArraySequence)"));
 
-        test1a = new ASeq(*test2a);
-        test1b = new LSeq(*test2b);
-        test2a = new LSeq(test2b->begin(), test2b->end());
-        if(!_assert_equal(test1a, test2a) || !_assert_equal(test1b, test2a) ||_assert_equal(test2a, test2b))
-            return std::string("copy construction");
+        Seq test2a = new LSeq(test1b);
+        if(!_assert_equal(test2a, test1b))
+            _add_str(result, std::string("copy construction (ListSequence)"));
+        Seq test2b = new ASeq(test1a);
+        if(!_assert_equal(test2b, test1a))
+            _add_str(result, std::string("copy construction (ArraySequence)"));
+
+        test1a = new LSeq(test2b->begin(), test2b->end());
+        if(!_assert_equal(test1a, test2b))
+            _add_str(result, std::string("range construction (ListSequence)"));
+        test1b = new ASeq(test2a->begin(), test2a->end());
+        if(!_assert_equal(test1b, test2a))
+            _add_str(result, std::string("range construction (ArraySequence)"));
 
         int r = rand();
-        test1a = new LSeq(size, r);
-        test1b = new LSeq(size, r);
-        if(!_assert_equal(size, test1a->size()) || !_assert_equal(size, test1b->size()) || !_assert_equal_members(test1b, r) ||
-                !_assert_equal(test1a, r))
-            return std::string("default member construction");
+        test2a = new LSeq(size, r);
+        if(!_assert_equal(size, test2a->size()))
+            _add_str(result, std::string("default member construction (ListSequence)"));
+        test2b = new ASeq(size, r);
+        if(!_assert_equal(size, test2b->size()))
+            _add_str(result, std::string("default member construction (ArraySequence)"));
+        auto iter1 = test2a->begin(),
+             last1 = test2a->end();
+        while(iter1 != last1){
+            if(*iter1 != r){
+                _add_str(result, std::string("default member construction (ListSequence)"));
+                break;
+            };
+            ++iter1;
+        };
+        iter1 = test2a->begin();
+        last1 = test2a->end();
+        while(iter1 != last1){
+            if(*iter1 != r){
+                _add_str(result, std::string("default member construction (ArraySequence)"));
+                break;
+            };
+            ++iter1;
+        };
 
-        return std::string("OK");
+        delete test1a;
+        delete test1b;
+        delete test2a;
+        delete test2b;
+
+        if(result.empty())
+            return std::string("OK");
+        return result;
     };
 
     std::string test_sequence_add_remove(){
+        std::string result = std::string();
         using Seq = Sequence<int>*;
         using LSeq = ListSequence<int>;
         using ASeq = ArraySequence<int>;
         int size = rand() + 10;
         _sample test_data = _sample(size);
         Seq testa = new LSeq(test_data.data, test_data.size);
-        Seq testb = new LSeq(test_data.data, test_data.size);
+        Seq testb = new ASeq(test_data.data, test_data.size);
 
         int r = rand();
-        testa->append(r);
-        testb->append(r);
-        testa->prepend(r);
-        testb->prepend(r);
         int index = rand() % (size - 1) + 1;
+
+        testa->append(r);
+        testa->prepend(r);
         testa->insert_at(r, index);
+        if(!_assert_equal(size + 3, testa->size()) || !_assert_equal(testa->front(), r) ||
+                !_assert_equal(testa->back(), r) || !_assert_equal(testa->get(index), r))
+            _add_str(result, std::string("adding to sequence (ListSequence)"));
+
+        testb->append(r);
+        testb->prepend(r);
         testb->insert_at(r, index);
-        if(!_assert_equal(size, testa->size() + 3) || !_assert_equal(size, testb->size() + 3) || !_assert_equal(testa->front(), r) ||
-                !_assert_equal(testb->front(), r) || !_assert_equal(testa->back(), r) || !_assert_equal(testb->back(), r) ||
-                !_assert_equal(testa->get(index), r) || !_assert_equal(testb->get(index), r) || !_assert_equal(testa, testb))
-            return std::string("adding to sequence");
+        if(!_assert_equal(testb->size(), size + 3) || !_assert_equal(testb->front(), r) ||
+                !_assert_equal(testb->back(), r) || !_assert_equal(testb->get(index), r) || !_assert_equal(testa, testb))
+            _add_str(result, std::string("adding to sequence (ArraySequence)"));
 
         testa->remove_at(index);
-        testb->remove_at(index);
         testa->remove_at(0);
-        testb->remove_at(0);
         testa->remove_at(testa->size() - 1);
-        testb->remove_at(testb->size() - 1);
-        if(!_assert_equal(size, testa->size()) || !_assert_equal(testa, test_data) || !_assert_equal(testa, testb))
-            return std::string("removing from sequence");
+        if(!_assert_equal(size, testa->size()) || !_assert_equal(testa, test_data))
+            _add_str(result, std::string("removing from sequence (ListSequence)"));
 
-        return std::string("OK");
+        testb->remove_at(index);
+        testb->remove_at(0);
+        testb->remove_at(testb->size() - 1);
+        if(!_assert_equal(size, testb->size()) || !_assert_equal(testb, test_data))
+            _add_str(result, std::string("removing from sequence (ArraySequence)"));
+
+        if(result.empty())
+            return std::string("OK");
+        return result;
     };
 
     std::string test_sequence_iter(){
+        std::string result = std::string();
         using Seq = Sequence<int>*;
         using LSeq = ListSequence<int>;
         using ASeq = ArraySequence<int>;
@@ -85,16 +130,27 @@ namespace Test {
         Seq testa = new LSeq(test.data, test.size);
         Seq testb = new ASeq(test.data, test.size);
 
-        auto itera = testa->begin();
-        auto iterb = testb->begin();
-        for(int i = 0; i < size; i++, itera++, iterb++)
-            if(*itera != test[i] || *iterb != test[i])
-                return std::string("using sequence iterator");
+        auto itera = testa->begin();;
+        for(int i = 0; i < size; i++, itera++)
+            if(*itera != test[i]) {
+                _add_str(result, std::string("using sequence iterator (ListSequence)"));
+                break;
+            };
 
-        return std::string("OK");
+        auto iterb = testb->begin();
+        for(int i = 0; i < size; i++, iterb++)
+            if(*iterb != test[i]) {
+                _add_str(result, std::string("using sequence iterator (ArraySequence)"));
+                break;
+            };
+
+        if(result.empty())
+            return std::string("OK");
+        return result;
     };
 
     std::string test_sequence_concate(){
+        std::string result = std::string();
         using Seq = Sequence<int>*;
         using LSeq = ListSequence<int>;
         using ASeq = ArraySequence<int>;
@@ -105,29 +161,47 @@ namespace Test {
         Seq test2 = new ASeq(data2.data, data2.size);
 
         Seq testa = test1->get_concated(test2);
+        if(!_assert_equal(testa->size(), size1 + size2))
+            _add_str(result, std::string("concating sequences size check (ListSequence)"));
         Seq testb = test2->get_concated(test1);
-        if(!_assert_equal(testa, testb) || !_assert_equal(testa->size(), testb->size()) ||
-                !_assert_equal(testa->size(), size1 + size2))
-            return std::string("concating sequences");
+        if(!_assert_equal(testa->size(), testb->size()))
+            _add_str(result, std::string("concating sequences size check (ArraySequence)"));
 
-        for(int i = 0; i < size1; i++)
-            if(testa->get(i) != test1->get(i))
-                return std::string("concating sequences");
-        for(int i = 0; i < size2; i++)
-            if(testb->get(i) != test2->get(i))
-                return std::string("concating sequences");
+        auto iter = testa->begin(),
+             data_iter = test1->begin();
+        for(int i = 0; i < size1; ++i, ++iter, ++ data_iter)
+            if(*iter != *data_iter) {
+                _add_str(result, std::string("concating sequences member check 1 (ListSequence)"));
+                break;
+            };
+        data_iter = test2->begin();
+        for(int i = 0; i < size2; ++i, ++iter, ++ data_iter)
+            if(*iter != *data_iter) {
+                _add_str(result, std::string("concating sequences member check 2 (ListSequence)"));
+                break;
+            };
 
-        for(int i = 0; i < size2; i++)
-            if(testa->get(i + size1) != test2->get(i))
-                return std::string("concating sequences");
-        for(int i = 0; i < size1; i++)
-            if(testb->get(i + size2) != test1->get(i))
-                return std::string("concating sequences");
+        iter = testb->begin();
+        data_iter = test2->begin();
+        for(int i = 0; i < size2; ++i, ++iter, ++ data_iter)
+            if(*iter != *data_iter) {
+                _add_str(result, std::string("concating sequences member check 1 (ArraySequence)"));
+                break;
+            };
+        data_iter = test1->begin();
+        for(int i = 0; i < size1; ++i, ++iter, ++ data_iter)
+            if(*iter != *data_iter) {
+                _add_str(result, std::string("concating sequences member check 2 (ArraySequence)"));
+                break;
+            };
 
-        return std::string("OK");
+        if(result.empty())
+            return std::string("OK");
+        return result;
     };
 
     std::string test_sequence_subsequence(){
+        std::string result = std::string();
         using Seq = Sequence<int>*;
         using LSeq = ListSequence<int>;
         using ASeq = ArraySequence<int>;
@@ -138,20 +212,33 @@ namespace Test {
 
         int index1 = rand() % (size / 2);
         int index2 = rand() % (size / 2) + size / 2;
+        int subsize = index2 - index1 + 1;
 
         Seq test2a = test1a->sub_sequence(index1, index2);
+        if(!_assert_equal(test2a->size(), subsize))
+            _add_str(result, std::string("creating subsequence size check (ListSequence)"));
         Seq test2b = test1b->sub_sequence(index1, index2);
-        if(!_assert_equal(test2a->size(), index2 - index1 + 1) || !_assert_equal(test2b->size(), test2b->size()))
-            std::string("creating subsequence");
+        if(!_assert_equal(test2b->size(), subsize))
+            _add_str(result, std::string("creating subsequence size check (ArraySequence)"));
 
-        for(int i = 0; i < test2a->size(); i++)
-            if(test1a->get(i + index1) != test2a->get(i))
-                std::string("creating subsequence");
-        for(int i = 0; i < test2b->size(); i++)
-            if(test1b->get(i + index1) != test2b->get(i))
-                std::string("creating subsequence");
+        auto iter1 = test1a->at(index1),
+             iter2 = test2a->begin();
+        for(int i = 0; i < subsize; ++i, ++iter1, ++iter2)
+            if(*iter1 != *iter2) {
+                _add_str(result, std::string("creating subsequence member check (ListSequence)"));
+                break;
+            };
+        iter1 = test1b->at(index1);
+        iter2 = test2b->begin();
+        for(int i = 0; i < subsize; ++i, ++iter1, ++iter2)
+            if(*iter1 != *iter2){
+                _add_str(result, std::string("creating subsequence member check (ArraySequence)"));
+                break;
+            };
 
-        return std::string("OK");
+        if(result.empty())
+            return std::string("OK");
+        return result;
     };
 };
 

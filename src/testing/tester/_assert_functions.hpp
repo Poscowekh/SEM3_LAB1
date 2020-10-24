@@ -3,7 +3,14 @@
 #include "../../structures/InterfaceIterator.hpp"
 #include "sample_struct.hpp"
 
-namespace Test {
+namespace Testing {
+    void _add_str(std::string& string, const std::string& addition) {
+        if(string.empty())
+            string += addition;
+        else
+            string += " & " + addition;
+    };
+
     template<typename Container, typename std::enable_if<std::is_pointer<Container>{}, int>::type = 0>
     bool _assert_sorted(const Container container){
         if(container->size() < 2)
@@ -22,27 +29,6 @@ namespace Test {
         return _assert_sorted(&container);
     };
 
-    template<typename Container1, typename Container2, typename std::enable_if<std::is_pointer<Container1>{} && std::is_pointer<Container2>{}, int>::type = 0>
-    bool _assert_equal(const Container1 container1, const Container2 container2){
-        if(container1->size() != container2->size())
-            return false;
-        if(container1->size() == 0)
-            return true;
-        auto
-            iter1 = container1->begin(),
-            iter2 = container2->begin(),
-            end = container1->end();
-        while(iter1 != end)
-            if(*iter2++ != *iter1++)
-                return false;
-        return true;
-    };
-    template<typename Container1, typename Container2, typename std::enable_if<!std::is_pointer<Container1>{} && !std::is_pointer<Container2>{}, int>::type = 0>
-    bool _assert_equal(const Container1 container1, const Container2 container2){
-        return _assert_equal(&container1, &container2);
-    };
-
-
     template<typename Container, typename std::enable_if<std::is_pointer<Container>{}, int>::type = 0>
     bool _assert_equal(const Container container, const _sample& test){
         if(container->size() != test.size)
@@ -60,6 +46,29 @@ namespace Test {
         return _assert_equal(&container, test);
     };
 
+    template<typename Container1, typename Container2, typename std::enable_if<std::is_pointer<Container1>{} &&
+                                                        std::is_pointer<Container2>{} && !std::is_same<Container2, _sample*>{}, int>::type = 0>
+    //for pointers
+    bool _assert_equal(const Container1 container1, const Container2 container2){
+        if(container1->size() != container2->size())
+            return false;
+        if(container1->size() == 0)
+            return true;
+        auto
+            iter1 = container1->begin(),
+            iter2 = container2->begin(),
+            end = container1->end();
+        while(iter1 != end)
+            if(*iter2++ != *iter1++)
+                return false;
+        return true;
+    };
+    template<typename Container1, typename Container2, typename std::enable_if<!std::is_pointer<Container1>{} && !std::is_pointer<Container2>{}
+                                                        && !std::is_same<Container2, _sample>{}, int>::type = 0>
+    //for non-poiters
+    bool _assert_equal(const Container1 container1, const Container2 container2){
+        return _assert_equal(&container1, &container2);
+    };
 
     bool _assert_equal(const int& first, const int& second){
         return first == second;

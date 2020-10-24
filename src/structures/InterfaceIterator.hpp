@@ -27,7 +27,9 @@ public:
     Iterator(const base_iterator* iter) : base_iter(const_cast<base_iterator*>(iter)) {};
     Iterator(const base_iterator& iter) : base_iter(&iter) {};
     Iterator(const Iterator& other) : base_iter(other.base_iter->copy()) {};
-    //Iterator(Iterator&& other) : base_iter(other->base_iter) {};
+    Iterator(Iterator&& other) : base_iter(other.base_iter) {
+        other.base_iter = 0;
+    };
 
     Iterator& operator++(){
         ++(*base_iter);
@@ -35,7 +37,7 @@ public:
     };
     Iterator operator++(int){
         Iterator copy = Iterator(this);
-        (*base_iter)++;
+        ++(*base_iter);
         return copy;
     };
 
@@ -45,7 +47,7 @@ public:
     };
     Iterator operator--(int){
         Iterator copy = Iterator(this);
-        (*base_iter)--;
+        --(*base_iter);
         return copy;
     };
 
@@ -56,12 +58,17 @@ public:
         return **base_iter;
     };
 
-    Iterator& operator=(const value val){
+    /*Iterator& operator=(const value val){
         **base_iter = value(val);
         return *this;
-    };
-    Iterator& operator=(const Iterator& other){
+    };*/
+    const Iterator& operator=(const Iterator& other){
         base_iter = other.base_iter->copy();
+        return *this;
+    };
+    const Iterator& operator=(Iterator&& other){
+        base_iter = other.base_iter;
+        other.base_iter = 0;
         return *this;
     };
 
@@ -86,13 +93,13 @@ public:
         return (*base_iter) <= (*other.base_iter);
     };
 
-    operator const_reference() const{
+    explicit operator const_reference() const{
         return const_reference(**this);
     };
-    operator reference() const{
+    explicit operator reference() const{
         return reference(**this);
     };
-    operator value() const{
+    explicit operator value() const{
         return value(**this);
     };
 
@@ -108,19 +115,27 @@ public:
     };
     void operator-=(const value val){
         **this -= val;
-    };
+    };*/
 
-    value operator+(const_reference val){
-        value result = value(**this);
-        result += val;
+    Iterator operator+(const int val) const{
+        Iterator result = Iterator(this);
+        (*result.base_iter) += val;
         return result;
     };
-    value operator+(const value val){
-        value result = value(**this);
-        result += val;
+    Iterator operator-(const int val) const{
+        Iterator result = Iterator(this);
+        (*result.base_iter) -= val;
         return result;
     };
 
+    void operator+=(const int val){
+        (*base_iter) += val;
+    };
+    void operator-=(const int val){
+        (*base_iter) -= val;
+    };
+
+    /*
     value operator-(const_reference val){
         value result = value(**this);
         result -= val;

@@ -25,12 +25,12 @@ public:
     virtual const_pointer operator->() const = 0;
 
     virtual BaseIterator* operator++() = 0;
-    virtual BaseIterator* operator++(int) = 0;
+    //virtual BaseIterator* operator++(int) = 0;
 
     virtual BaseIterator* operator--() = 0;
-    virtual BaseIterator* operator--(int) = 0;
+    //virtual BaseIterator* operator--(int) = 0;
 
-    virtual BaseIterator& operator=(const BaseIterator& other){
+    /*virtual BaseIterator& operator=(const BaseIterator& other){
         if(this != &other)
             ref() = other.cref();
         return *this;
@@ -39,9 +39,14 @@ public:
         if(this != other)
             ref() = other->cref();
         return this;
-    };
+    };*/
 
     virtual BaseIterator* copy() const = 0;
+
+    virtual BaseIterator* operator=(const BaseIterator* other){
+        if(typeid(*this) != typeid(*other))
+            throw std::runtime_error("\nIteratro exception: comparing iterators of different types");
+    };
 
     virtual bool operator==(const BaseIterator* other) const{
         if(typeid(*this) != typeid(*other))
@@ -91,6 +96,12 @@ public:
             return true;
         return false;
     };
+
+    virtual BaseIterator* operator+(const int val) const = 0;
+    virtual BaseIterator* operator-(const int val) const = 0;
+
+    virtual void operator+=(const int val) = 0;
+    virtual void operator-=(const int val) = 0;
 
     virtual int operator-(const BaseIterator& other) const{
         if(typeid(*this) != typeid(other))

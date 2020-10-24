@@ -27,42 +27,26 @@ public:
         other._list = 0;
     };
 
-    ListSequence(const Sequence* other) : ListSequence() {
-        for(int i = 0; i < other->size(); i++)
-            _list->push_back(other->get(i));
-    };
+    ListSequence(const Sequence* other) : ListSequence(other->begin(), other->end()) {};
     ListSequence(const Sequence& other) : ListSequence(&other) {};
     ListSequence(Sequence&& other) : ListSequence(&other) {
-        other.clear();
+        other._list = 0;
     };
 
     ListSequence(const List* list) : _list(new List(list)) {};
     ListSequence(const List& list) : ListSequence(&list) {};
-    ListSequence(List&& list) : _list(new List(list)){
-        list = 0;
-    };
+    ListSequence(List&& list) : _list(new List(list)) {};
 
-    ListSequence(const Array* array) : ListSequence() {
-        for(int i = 0; i < array->size(); i++)
-            _list->push_back(array->get(i));
-    };
+    ListSequence(const Array* array) : ListSequence(array->begin(), array->end()) {};
     ListSequence(const Array& array) : ListSequence(&array) {};
     ListSequence(Array&& array) : ListSequence(&array) {
-        array._data = 0;
+        &array = 0;
     };
 
-    ListSequence(const_pointer data, const int count){
-        _list = new List(data, count);
-    };
-    ListSequence(const int size, InitializerFunction func){
-        _list = new List(size, func);
-    };
-    ListSequence(std::initializer_list<T> list){
-        _list = new List(list);
-    };
-    ListSequence(const int size, const_reference default_value = T()){
-        _list = new List(size, default_value);
-    };
+    ListSequence(const_pointer data, const int count) : _list(new List(data, count)) {};
+    ListSequence(const int size, InitializerFunction func) : _list(new List(size, func)) {};
+    ListSequence(std::initializer_list<T> list) : _list(new List(list)) {};
+    ListSequence(const int size, const_reference default_value = T()) : _list(new List(size, default_value)) {};
     ListSequence(const int size, const_pointer default_value) : ListSequence(size, *default_value) {};
     ListSequence(iterator from, iterator to) : _list(new List(from, to)) {};
 
@@ -158,7 +142,7 @@ public:
     };
 
     Sequence* sub_sequence(const int from, const int to) const{
-        return new ListSequence(_list->sublist(from, to));
+        return dynamic_cast<Sequence*>(new ListSequence(_list->sublist(from, to)));
     };
 
     void copy(const_pointer data, const int count){
@@ -166,25 +150,35 @@ public:
     };
 
     void concate(const Sequence* other){
-        for(int i = 0; i < other->size(); i++)
-            _list->push_back(other->get(i));
+        auto iter = other->begin(),
+             last = other->end();
+        while(iter != last) {
+            _list->push_back(*iter);
+            ++iter;
+        };
     };
     void concate(const Sequence& other){
         concate(&other);
     };
     Sequence* get_concated(const Sequence* other) const{
-        Sequence* result = new ListSequence(this);
-        for(int i = 0;i < other->size(); i++)
-            result->append(other->get(i));
-        return result;
+        ListSequence* result = new ListSequence(this);
+        result->concate(other);
+        return dynamic_cast<Sequence*>(result);
     };
     Sequence* get_concated(const Sequence& other) const{
         return get_concated(&other);
     };
 
     Sequence* get_copy() const{
-        return new ListSequence(this);
+        return dynamic_cast<Sequence*>(new ListSequence(this));
     };
+    Sequence* get_clean_copy(const int size = 1) const{
+        if(size > 0)
+            return dynamic_cast<Sequence*>(new ListSequence(size));
+        else
+            return dynamic_cast<Sequence*>(new ListSequence());
+    };
+
     Sequence& copy_to(Sequence& destination, const int from, const int to) const{
         _list->copy_to(destination._list, from, to);
         return destination;
@@ -214,7 +208,7 @@ public:
         result->append(&data);
         return result;
     };
-    ListSequence& operator+=(const_reference data){
+    Sequence& operator+=(const_reference data){
         append(&data);
         return *this;
     };
@@ -246,8 +240,10 @@ public:
                 clear();
             auto from = other->begin();
             auto to = other->end();
-            while(from != to)
-                append(*from++);
+            while(from != to){
+                append(*from);
+                ++from;
+            };
         };
         return dynamic_cast<Sequence*>(this);
     };
@@ -255,12 +251,13 @@ public:
         operator=(&other);
         return dynamic_cast<Sequence&>(*this);
     };
-    Sequence* operator=(std::initializer_list<T> list){
+    Sequence* operator=(const std::initializer_list<T>& list){
         _list = new List(list);
         return dynamic_cast<Sequence*>(this);
     };
 
     ~ListSequence(){
+        //this->~Sequence();
         delete _list;
     };
 };

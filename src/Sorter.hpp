@@ -1,62 +1,103 @@
 #ifndef SORTER_HPP
 #define SORTER_HPP
-#include <chrono>
-#include <iostream>
 #include "Structures.hpp"
 #include "Sorts.hpp"
 
-template<typename SortFunc> class Sorter : public Array<SortFunc>{
+template<typename T = double>
+class Sorter {
 private:
-    using _array = Array<SortFunc>;
+    using Sequence = Sequence<T>*;
+    using Comparator = Comparator<T>;
+    using Sort = SortFunction<T>;
+
+    Sort* funcs = 0;
+    int count = 0;
+    Sequence sequence = 0;
+    Comparator comparator = StdComparator<T>;
+
+    Sorter(const Sorter&) = delete;
+
+    void _realloc(const int _count = 1){
+        Sort* tmp = (Sort*)malloc((count + _count) * sizeof(Sort));
+        memcpy(tmp, funcs, count * sizeof(Sort));
+        free(funcs);
+        funcs = tmp;
+        tmp = 0;
+    };
+    void _print_sort_names() const{
+        using std::cout;
+        using std::endl;
+
+        for(int i = 0; i < count; i++)
+            cout << "   " << i + 1 << ": " << (funcs + i)->name() << endl;
+    };
+    int _choose_sort() const{
+        using std::cout;
+        using std::cin;
+        using std::endl;
+
+        int choise = -1;
+
+        cout << "Choose a sorting algorythm:\n";
+        _print_sort_names();
+        cout << "Chosen: ";
+        try {
+            cin >> choise;
+        } catch (...) {
+            cout << "Wrong input, try again...\n";
+            return _choose_sort();
+        }
+        if(choise < 0 || choise > count)
+            cout << "Wrong input, try again...\n";
+            return _choose_sort();
+        cout << endl;
+
+        return choise;
+    };
 
 public:
-    Sorter() : _array() {};
-    Sorter(SortFunc func) : _array(&func, 1) {};
-
-    Sorter(const Sorter* other) = delete;
-    Sorter(Sorter&& other) = delete;
-    Sorter(const Sorter& other) = delete;
-
-    void add_sort(SortFunc func){
-        Sorter::push_back(func);
+    Sorter() : funcs(0), count(0), sequence(0), comparator(StdComparator<T>) {};
+    Sorter(Sorter&& other) : funcs(other.funcs), count(other.count),
+        sequence(other.sequence), comparator(other.comparator) {
+        other.funcs = 0;
     };
 
-
-    template<typename T>
-    Sequence<T>* get_sorted(const Sequence<T>* sequence, Comparator<T> comparator = StdComparator, bool print_time = false){
-        Sequence<T>* copy = sequence->get_copy();
-        sort(copy);
-        return copy;
+    void add_sort(const Sort* function){
+        _realloc();
+        memcpy(funcs, function, sizeof(Sort));
+        ++count;
     };
-    template<typename T>
-    Sequence<T>* get_sorted(const Sequence<T>& sequence, Comparator<T> comparator = StdComparator, bool print_time = false){
-        return get_sorted(&sequence);
+    void add_sort(const Sort& function){
+        add_sort(&function);
     };
 
-    template<typename T>
-    Sequence<T>* operator()(const Sequence<T>* sequence, Comparator<T> comparator = StdComparator, bool print_time = false){
-        time_t begin = time(0);
-        Sequence<T>* result = get_sorted(result);
-        if(print_time){
-            time_t end = time(0);
-            std::cout << "Time taken: " << end - begin << " seconds/n";
+    void set_sequence(Sequence _sequence){
+        sequence = _sequence;
+    };
+    void set_comparator(Comparator _comparator){
+        comparator = _comparator;
+    };
+
+    long long operator()(bool show_time = true) const{
+        int choise = _choose_sort();
+        Sequence copy = sequence->get_copy();
+        long long result = _get_time_micro(*(funcs + choise), copy, comparator);
+
+        if(show_time){
+            std::string output = std::string();
+            output += "time taken: ";
+            output += std::to_string(result);
+            output += " microseconds\n";
+            std::cout << output;
         };
+        delete copy;
         return result;
-    };
-    template<typename T>
-    Sequence<T>* operator()(const Sequence<T>& sequence, Comparator<T> comparator = StdComparator, bool print_time = false){
-        return (*this)(&sequence, comparator, print_time);
-    };
-
-    Sorter& operator=(const Sorter& other){
-        if(this != &other)
-            ;
-            //Sorter::_array = other;
-        return *this;
     };
 
     ~Sorter(){
-        ~_array();
+        free(funcs);
+        sequence = 0;
+        delete sequence;
     };
 };
 

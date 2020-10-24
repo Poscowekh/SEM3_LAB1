@@ -42,6 +42,10 @@ private:
         return false;
     };
 
+    ArrayIterator* _copy() const{
+        return new ArrayIterator(this);
+    };
+
 public:
     ArrayIterator() = delete;
     ArrayIterator(pointer data_ptr) : _ptr(data_ptr) {};
@@ -50,34 +54,52 @@ public:
     };
     ArrayIterator(const ArrayIterator* other) : _ptr(other->_ptr) {};
     ArrayIterator(const ArrayIterator& other) : _ptr(other._ptr) {};
+    ArrayIterator(ArrayIterator&& other) : _ptr(other._ptr) {
+        other._ptr = 0;
+    };
+
+    const ArrayIterator& operator=(const ArrayIterator& other) {
+        _ptr = other._ptr;
+        return *this;
+    };
+    const ArrayIterator& operator=(ArrayIterator&& other) {
+        _ptr = other._ptr;
+        other._ptr = 0;
+        return *this;
+    };
+    base_iterator operator=(const base_iterator other) {
+        dynamic_cast<BaseIterator<value>&>(*this) = other;
+        _ptr = other->cptr();
+        return dynamic_cast<base_iterator>(this);
+    };
 
     base_iterator operator++(){
         if(_is_end() || _ptr + 1 == 0)
             throw std::runtime_error("\nArray iterator exception: incrementing end iterator");
         _ptr += 1;
         return dynamic_cast<base_iterator>(this);
-    };
+    };/*
     base_iterator operator++(int){
         if(_is_end() || _ptr + 1 == 0)
             throw std::runtime_error("\nArray iterator exception: incrementing end iterator");
         base_iterator copy = dynamic_cast<base_iterator>(new ArrayIterator(this));
         _ptr += 1;
         return copy;
-    };
+    };*/
 
     base_iterator operator--(){
         if(_ptr - 1 == 0)
             throw std::runtime_error("\nArray iterator exception: decrementing to null-pointing iterator");
         _ptr -= 1;
         return dynamic_cast<base_iterator>(this);
-    };
+    };/*
     base_iterator operator--(int){
         if(_ptr - 1 == 0)
             throw std::runtime_error("\nArray iterator exception: decrementing to null-pointing iterator");
         base_iterator copy = dynamic_cast<base_iterator>(new ArrayIterator(this));
         _ptr -= 1;
         return copy;
-    };
+    };*/
 
     reference operator*(){
         return ref();
@@ -94,8 +116,31 @@ public:
         return dynamic_cast<base_iterator>(new ArrayIterator(this));
     };
 
-    ~ArrayIterator(){
-        _ptr = 0;
+    base_iterator operator+(const int val) const{
+       ArrayIterator* result = _copy();
+        result->_ptr += val;
+        return dynamic_cast<base_iterator>(result);
+    };
+    base_iterator operator-(const int val) const{
+        ArrayIterator* result = _copy();
+         result->_ptr -= val;
+         return dynamic_cast<base_iterator>(result);
+    };
+
+    void operator+=(const int val){
+        _ptr += val;
+    };
+    void operator-=(const int val){
+        _ptr -= val;
+    };
+
+    int operator-(const ArrayIterator& other) const{
+        return std::abs(_ptr - other._ptr);
+    };
+    int operator-(const BaseIterator<value>& other) const override{
+        if(typeid(*this) != typeid(other))
+            throw std::runtime_error("\nIterator exception: evaluating distance between iterators of different types");
+        return *this - dynamic_cast<const ArrayIterator&>(other);
     };
 };
 
