@@ -12,11 +12,11 @@ Sequence<T>* _merge_sort(Sequence<T>*& sequence, Comparator<T> comparator = StdC
     //divising
     Sequence<T>* left_subsequence = sequence->sub_sequence(0, divisor - 1);
     Sequence<T>* left = _merge_sort(left_subsequence, comparator);
-    delete left_subsequence;
+    //delete left_subsequence;
 
     Sequence<T>* right_subsequence = sequence->sub_sequence(divisor, sequence->size() - 1);
     Sequence<T>* right = _merge_sort(right_subsequence, comparator);
-    delete right_subsequence;
+    //delete right_subsequence;
 
     Iterator<T>
             input = sequence->begin(),

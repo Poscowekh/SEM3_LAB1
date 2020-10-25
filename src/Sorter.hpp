@@ -10,26 +10,18 @@ private:
     using Comparator = Comparator<T>;
     using Sort = SortFunction<T>;
 
-    Sort* funcs = 0;
-    int count = 0;
+    Array<Sort>* funcs = new Array<Sort>();
     Sequence sequence = 0;
     Comparator comparator = StdComparator<T>;
 
     Sorter(const Sorter&) = delete;
 
-    void _realloc(const int _count = 1){
-        Sort* tmp = (Sort*)malloc((count + _count) * sizeof(Sort));
-        memcpy(tmp, funcs, count * sizeof(Sort));
-        free(funcs);
-        funcs = tmp;
-        tmp = 0;
-    };
     void _print_sort_names() const{
         using std::cout;
         using std::endl;
 
-        for(int i = 0; i < count; i++)
-            cout << "   " << i + 1 << ": " << (funcs + i)->name() << endl;
+        for(int i = 0; i < funcs->size(); ++i)
+            cout << "   " << i + 1 << ": " << funcs->get(i).name() << endl;
     };
     int _choose_sort() const{
         using std::cout;
@@ -47,25 +39,23 @@ private:
             cout << "Wrong input, try again...\n";
             return _choose_sort();
         }
-        if(choise < 0 || choise > count)
+        if(choise < 0 || choise > funcs->size()) {
             cout << "Wrong input, try again...\n";
             return _choose_sort();
+        };
         cout << endl;
 
         return choise;
     };
 
 public:
-    Sorter() : funcs(0), count(0), sequence(0), comparator(StdComparator<T>) {};
-    Sorter(Sorter&& other) : funcs(other.funcs), count(other.count),
-        sequence(other.sequence), comparator(other.comparator) {
+    Sorter() : funcs(new Array<Sort>()), sequence(0), comparator(StdComparator<T>) {};
+    Sorter(Sorter&& other) : funcs(other.funcs), sequence(other.sequence), comparator(other.comparator) {
         other.funcs = 0;
     };
 
     void add_sort(const Sort* function){
-        _realloc();
-        memcpy(funcs, function, sizeof(Sort));
-        ++count;
+        funcs->push_back(function);
     };
     void add_sort(const Sort& function){
         add_sort(&function);
@@ -78,27 +68,47 @@ public:
         comparator = _comparator;
     };
 
-    long long operator()(bool show_time = true) const{
-        int choise = _choose_sort();
+    Sequence operator()(bool show_time = true) const{
+        int choise = _choose_sort() - 1;
         Sequence copy = sequence->get_copy();
-        long long result = _get_time_micro(*(funcs + choise), copy, comparator);
+        long long result = _sort_time(funcs->get(choise), copy, comparator);
 
         if(show_time){
             std::string output = std::string();
             output += "time taken: ";
             output += std::to_string(result);
-            output += " microseconds\n";
+            output += " milliseconds\n";
             std::cout << output;
         };
-        delete copy;
-        return result;
+
+        return copy;
+    };
+    Sort operator[](const int sort_index) const{
+        return funcs->get(sort_index);
+    };
+
+    int count() const{
+        return funcs->size();
     };
 
     ~Sorter(){
-        free(funcs);
+        delete funcs;
         sequence = 0;
         delete sequence;
     };
+};
+
+Sorter<double> _basic_sorter(){
+    Sorter<double> sorter = Sorter<double>();
+
+    sorter.add_sort(bubble_sort);
+    sorter.add_sort(shaker_sort);
+    sorter.add_sort(insertion_sort);
+    sorter.add_sort(selection_sort);
+    sorter.add_sort(quick_sort);
+    sorter.add_sort(merge_sort);
+
+    return sorter;
 };
 
 #endif // SORTER_HPP

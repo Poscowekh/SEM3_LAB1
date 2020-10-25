@@ -1,8 +1,8 @@
-#include <iostream>
-#include "Structures.hpp"
+//#include <iostream>
+//#include "Structures.hpp"
 #include "Interface.hpp"
-#include "testing/tests/Tests.hpp"
-
+//#include "testing/tests/Tests.hpp"
+/*
 using namespace std;
 
 using LS = ListSequence<int>;
@@ -52,33 +52,11 @@ template<typename Func>
 void do_a_sort_milli_for_both(const S* list, const S* array, Func func) {
     do_a_sort_milli(list, func);
     do_a_sort_milli(array, func);
-};
+};*/
 
 int main(){
-    //Interface* interface = new Interface();
-    //(*interface)();
-
-    using namespace Testing;
-
-    srand(time(0));
-    int size = 10;
-    _sample test = _sample(size);
-
-    //S* list = new LS(test.data, test.size);
-    S* array = new AS(test.data, test.size);
-    //array;
-    cout << array;
-
-    do_a_sort_milli(array, BinaryInsertionSort<int>);
-    //do_a_sort_micro(list, ShakerSort<int>);
-    //do_a_sort_micro(list, MergeSort<int>);
-    //do_a_sort_micro(list, SelectionSort<int>);
-    //do_a_sort_micro(list, InsertionSort<int>);
-    //do_a_sort_micro(list, MergeSort<int>);
-    //do_a_sort_micro(list, QuickSort<int>);
-
-    //delete list;
-    //delete array;
+    Interface* interface = new Interface();
+    (*interface)();
 
     return 0;
 };

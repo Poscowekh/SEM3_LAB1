@@ -4,7 +4,7 @@
 
 template<typename T>
 Sequence<T>* QuickSort(Sequence<T>*& sequence, Comparator<T> comparator = StdComparator<T>){
-    if(sequence == 0 || sequence->size() < 2)
+    if(sequence == 0 || sequence->size() < 2 || Testing::_assert_sorted(sequence))
         return sequence;
     _quicksort(sequence, comparator, 0, sequence->size() - 1);
     return sequence;

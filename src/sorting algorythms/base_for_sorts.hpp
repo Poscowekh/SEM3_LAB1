@@ -1,6 +1,7 @@
 #ifndef BASE_FOR_SORTS_HPP
 #define BASE_FOR_SORTS_HPP
 #include "../Structures.hpp"
+#include "../testing/tester/_assert_functions.hpp"
 #include <chrono>
 
 //comparators
@@ -31,10 +32,10 @@ private:
     std::string _name = "name undefined";
 
     SortFunction() = delete;
-    SortFunction(const SortFunction&) = delete;
 
 public:
     SortFunction(const std::string& _name, Sort _sort) : sort(_sort), _name(_name) {};
+    SortFunction(const SortFunction&) = default;
     SortFunction(SortFunction&& other) : sort(other.sort), _name(other._name) {};
 
     const std::string& name() const{
@@ -82,7 +83,7 @@ long long _get_time_micro(Function func, FuncArgs... args){
     using namespace std::chrono;
     time_point begin = m_clock::now();
     func(args...);
-    milliseconds tmp = std::chrono::duration_cast<milliseconds>(m_clock::now() - begin);
+    microseconds tmp = std::chrono::duration_cast<microseconds>(m_clock::now() - begin);
     return static_cast<long long>(tmp.count());
 };
 template<typename Function, typename ...FuncArgs>
@@ -90,7 +91,15 @@ long long _get_time_milli(Function func, FuncArgs... args){
     using namespace std::chrono;
     time_point begin = m_clock::now();
     func(args...);
-    microseconds tmp = std::chrono::duration_cast<microseconds>(m_clock::now() - begin);
+    milliseconds tmp = std::chrono::duration_cast<milliseconds>(m_clock::now() - begin);
+    return static_cast<long long>(tmp.count());
+};
+template<typename T>
+long long _sort_time(const SortFunction<T>& sort, Sequence<T>*& sequence, Comparator<T> comparator = StdComparator<T>){
+    using namespace std::chrono;
+    time_point begin = m_clock::now();
+    sequence = sort(sequence, comparator);
+    milliseconds tmp = std::chrono::duration_cast<milliseconds>(m_clock::now() - begin);
     return static_cast<long long>(tmp.count());
 };
 
